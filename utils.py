@@ -3,6 +3,11 @@ from sklearn.utils.multiclass import unique_labels
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from constants import BASIC_TRAINING_COLS
+from sklearn.model_selection import train_test_split
+import torch
+import torch.utils.data
+
 
 def plot_confusion_matrix(y_true, y_pred, classes,
                           normalize=False,
@@ -57,16 +62,3 @@ def plot_confusion_matrix(y_true, y_pred, classes,
                     color="white" if cm[i, j] > thresh else "black")
     fig.tight_layout()
     return ax
-
-def read_dataset(path):
-    dataset = []
-    trial_count = 0
-
-    while True:
-        try:
-            dataset.append(pd.read_hdf(path, key="trial_"+str(trial_count), dtype=np.float32))
-            trial_count += 1
-        except KeyError:
-            break
-    
-    return dataset
