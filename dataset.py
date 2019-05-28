@@ -19,7 +19,7 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, normalise=False):
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False):
 
     X = []
     Y = []
@@ -46,7 +46,7 @@ def prepare_dataset(dataset, class_columns, normalise=False):
     
     train_dataset = torch.utils.data.TensorDataset(X_train, Y_train)
     val_dataset = torch.utils.data.TensorDataset(X_val, Y_val)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=640, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
     
     return train_loader, val_loader
