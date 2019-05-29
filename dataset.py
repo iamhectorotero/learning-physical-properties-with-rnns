@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from constants import BASIC_TRAINING_COLS
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import torch
 import torch.utils.data
-
 
 def read_dataset(path):
     dataset = []
@@ -19,7 +19,7 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False, test_size=0.2):
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2):
 
     X = []
     Y = []
@@ -33,11 +33,10 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False, tes
 
     X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=test_size, random_state=42)
 
-    if normalise:
-        attr_means = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)
-        attr_std = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)
-        X_train = (X_train - attr_means) / attr_std
-        X_val = (X_val - attr_means) / attr_std
+    if normalise_data:
+        scaler = StandardScaler()
+        X_train = normalise(X_train, scaler, fit_scaler=True)
+        X_val = normalise(X_val, scaler, fit_scaler=False) 
         
     X_train = torch.from_numpy(X_train).cuda()
     X_val = torch.from_numpy(X_val).cuda()
@@ -49,4 +48,14 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False, tes
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     
-    return train_loader, val_loader
+    return train_loader, val_loader, scaler
+
+def normalise(X, scaler, fit_scaler=True):
+    original_shape = X.shape
+    X = X.reshape(-1, original_shape[-1])
+
+    if fit_scaler:
+        scaler.fit(X)
+        
+    return scaler.transform(X).reshape(original_shape)
+        
