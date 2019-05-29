@@ -25,6 +25,7 @@ class ComplexRNNModel(nn.Module):
         super(ComplexRNNModel, self).__init__()
         # RNN
         self.lstm = nn.LSTM(input_dim, first_hidden_dim, 1, batch_first=True, )
+        self.dropout = nn.Dropout(0.25)
         self.lstm_2 = nn.LSTM(first_hidden_dim, second_hidden_dim, 1, batch_first=True)
         
         # Readout layer
@@ -32,6 +33,7 @@ class ComplexRNNModel(nn.Module):
     
     def forward(self, x):
         out, _ = self.lstm(x)
+        out = self.dropout(out)
         out, _ = self.lstm_2(out)
         out = self.fc(out[:, -1, :]) 
         return out

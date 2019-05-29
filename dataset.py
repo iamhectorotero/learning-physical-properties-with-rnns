@@ -19,7 +19,7 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False):
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False, test_size=0.2):
 
     X = []
     Y = []
@@ -30,9 +30,9 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False):
 
     X = np.array(X)
     Y = np.array(Y)
-    
-    X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
-    
+
+    X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=test_size, random_state=42)
+
     if normalise:
         attr_means = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)
         attr_std = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)
@@ -47,6 +47,6 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise=False):
     train_dataset = torch.utils.data.TensorDataset(X_train, Y_train)
     val_dataset = torch.utils.data.TensorDataset(X_val, Y_val)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     
     return train_loader, val_loader

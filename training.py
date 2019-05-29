@@ -6,11 +6,13 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
     """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
     Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
     
+    
     epoch_losses = []
     epoch_accuracies = []
     
     for epoch in tqdm(range(num_epochs)):
-
+        model.train()
+        
         epoch_loss = 0
 
         for x, y in train_loader:
@@ -32,6 +34,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
 
         epoch_losses.append(epoch_loss / len(train_loader))
 
+        model.eval()
         accuracy = evaluate(model, val_loader)
 
         epoch_accuracies.append(accuracy)
