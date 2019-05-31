@@ -5,7 +5,7 @@ import math
 import gizeh as gz
 import moviepy.editor as mpy
 
-from dataset import read_dataset
+from .dataset import read_dataset
 
 def make_frame_curried(this_data):
     def make_frame(t):
@@ -81,8 +81,8 @@ def make_frame_curried(this_data):
 if __name__ == "__main__":
 
     random_trial = np.random.randint(0, 1600)
-    random_trial = 0
-    data = pd.read_hdf("passive_trials.h5", key="trial_"+str(random_trial))
+    random_trial = 1
+    data = pd.read_hdf("cond_1.h5", key="trial_"+str(random_trial))
 
     print(data.head())
     make_frame = make_frame_curried(data)

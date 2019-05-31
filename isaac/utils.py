@@ -3,10 +3,11 @@ from sklearn.utils.multiclass import unique_labels
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from constants import BASIC_TRAINING_COLS
 from sklearn.model_selection import train_test_split
 import torch
 import torch.utils.data
+
+from .constants import BASIC_TRAINING_COLS
 
 
 def plot_confusion_matrix(y_true, y_pred, classes,

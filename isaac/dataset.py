@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
-from constants import BASIC_TRAINING_COLS
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import torch
 import torch.utils.data
+
+from .constants import BASIC_TRAINING_COLS
 
 def read_dataset(path):
     dataset = []
@@ -33,6 +34,7 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False
 
     X_train, X_val, Y_train, Y_val = split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes)
     
+    scaler = None
     if normalise_data:
         scaler = StandardScaler()
         X_train = normalise(X_train, scaler, fit_scaler=True)
