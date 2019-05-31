@@ -8,7 +8,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
     
     
     epoch_losses = []
-    epoch_accuracies = []
+    epoch_accuracies = [[],[]]
     
     for epoch in tqdm(range(num_epochs)):
         model.train()
@@ -35,12 +35,13 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
         epoch_losses.append(epoch_loss / len(train_loader))
 
         model.eval()
-        accuracy = evaluate(model, val_loader)
-
-        epoch_accuracies.append(accuracy)
+        train_accuracy = evaluate(model, train_loader)
+        epoch_accuracies[0].append(train_accuracy)
+        val_accuracy = evaluate(model, val_loader)
+        epoch_accuracies[1].append(val_accuracy)
 
         if print_stats_per_epoch:
-            print(epoch_losses[-1], epoch_accuracies[-1])
+            print(epoch_losses[-1], train_accuracy, val_accuracy)
     
     return epoch_losses, epoch_accuracies
 

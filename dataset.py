@@ -19,7 +19,7 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2):
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=True):
 
     X = []
     Y = []
@@ -31,8 +31,8 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False
     X = np.array(X)
     Y = np.array(Y)
 
-    X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=test_size, random_state=42)
-
+    X_train, X_val, Y_train, Y_val = split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes)
+    
     if normalise_data:
         scaler = StandardScaler()
         X_train = normalise(X_train, scaler, fit_scaler=True)
@@ -58,4 +58,17 @@ def normalise(X, scaler, fit_scaler=True):
         scaler.fit(X)
         
     return scaler.transform(X).reshape(original_shape)
+
+def split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes=True):
+    
+    if equiprobable_training_classes:
+        classes, counts = np.unique(Y, return_counts=True)
+        min_class_count = int(min(counts) * (1 - test_size))
+
+        train_indices = np.concatenate([np.where(Y == class_i)[0][:min_class_count] for class_i in classes])
+        test_indices = list(set(np.arange(len(Y))) - set(train_indices))
+        
+        return X[train_indices], X[test_indices], Y[train_indices], Y[test_indices]
+    
+    return train_test_split(X, Y, test_size=test_size, random_state=42)
         
