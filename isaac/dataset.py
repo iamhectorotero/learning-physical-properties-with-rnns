@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import torch
 import torch.utils.data
+from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS
 
@@ -20,13 +21,19 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=True):
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=True,
+                    transforms=()):
 
     X = []
     Y = []
 
-    for trial in dataset:
-        X.append(np.array(trial[BASIC_TRAINING_COLS]).astype(np.float32))
+    for trial in tqdm(dataset):
+        training_cols = trial[BASIC_TRAINING_COLS]
+        
+        for t in transforms:
+            t(training_cols)
+            
+        X.append(np.array(training_cols).astype(np.float32))
         Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
 
     X = np.array(X)
