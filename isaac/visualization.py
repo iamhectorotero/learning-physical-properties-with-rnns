@@ -50,7 +50,7 @@ def make_frame_curried(this_data):
             text.draw(surface)
 
         # Mouse cursor
-        if 'mouse' in data.columns:
+        if 'mouse' in this_data.columns:
             cursor_xy = np.array([this_data['mouse.x'].iloc[frame]*RATIO, this_data['mouse.y'].iloc[frame]*RATIO])
         else:
             cursor_xy = np.array([0, 0])
@@ -81,8 +81,8 @@ def make_frame_curried(this_data):
 if __name__ == "__main__":
 
     random_trial = np.random.randint(0, 1600)
-    random_trial = 1
-    data = pd.read_hdf("cond_1.h5", key="trial_"+str(random_trial))
+    random_trial = 0
+    data = pd.read_hdf("../data/passive_trials.h5", key="trial_"+str(random_trial))
 
     print(data.head())
     make_frame = make_frame_curried(data)
