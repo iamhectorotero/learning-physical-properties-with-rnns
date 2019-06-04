@@ -1,16 +1,19 @@
 import torch
 from torch.autograd import Variable
 from tqdm import tqdm
+from copy import deepcopy
 
 def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True):
     """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
     Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
     
-    
+    best_model, best_val_accuracy = None, 0
     epoch_losses = []
     epoch_accuracies = [[],[]]
     
-    for epoch in tqdm(range(num_epochs)):
+    pbar = tqdm(range(num_epochs))
+    
+    for epoch in pbar:
         model.train()
         
         epoch_loss = 0
@@ -40,10 +43,14 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
         val_accuracy = evaluate(model, val_loader)
         epoch_accuracies[1].append(val_accuracy)
 
+        if val_accuracy > best_val_accuracy:
+            best_model = deepcopy(model)
+            best_val_accuracy = val_accuracy
+            
         if print_stats_per_epoch:
-            print(epoch_losses[-1], train_accuracy, val_accuracy)
+            pbar.set_description("Train_loss (%.2f)\t Train_acc (%.2f)\t Val_acc (%.2f)" % (epoch_losses[-1], train_accuracy, val_accuracy))
     
-    return epoch_losses, epoch_accuracies
+    return epoch_losses, epoch_accuracies, best_model
 
 
 def evaluate(model, val_loader, return_predicted=False):
