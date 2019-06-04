@@ -21,7 +21,7 @@ def read_dataset(path):
     
     return dataset
 
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=True,
+def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
                     transforms=()):
 
     X = []
