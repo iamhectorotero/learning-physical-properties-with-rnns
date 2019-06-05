@@ -24,7 +24,7 @@ class ComplexRNNModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0.):
         super(ComplexRNNModel, self).__init__()
         # RNN
-        self.lstm = nn.LSTM(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.lstm = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         # Readout layer
         self.fc = nn.Linear(hidden_dim, output_dim)
     

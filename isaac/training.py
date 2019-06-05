@@ -20,7 +20,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
 
         for x, y in train_loader:
 
-            x = Variable(x)
+            x = Variable(x[:, ::2, :])
             y = Variable(y)
             # Clear gradients
             optimizer.zero_grad()
