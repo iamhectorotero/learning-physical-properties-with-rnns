@@ -50,8 +50,8 @@ def make_frame_curried(this_data):
             text.draw(surface)
 
         # Mouse cursor
-        if 'mouse' in this_data.columns:
-            cursor_xy = np.array([this_data['mouse.x'].iloc[frame]*RATIO, this_data['mouse.y'].iloc[frame]*RATIO])
+        if 'mouseY' in this_data.columns:
+            cursor_xy = np.array([this_data['mouseX'].iloc[frame], this_data['mouseY'].iloc[frame]])
         else:
             cursor_xy = np.array([0, 0])
 
@@ -59,14 +59,14 @@ def make_frame_curried(this_data):
         cursor.draw(surface)
 
         # Control
-        if "co" in this_data.columns and this_data['co'].iloc[frame] != 0:
-            if this_data['co'][frame]==1:
+        if "idControlledObject" in this_data.columns and this_data['idControlledObject'].iloc[frame] != "none":
+            if this_data['idControlledObject'].iloc[frame]=="object1":
                 xy = np.array([this_data['o1.x'].iloc[frame]*RATIO, this_data['o1.y'].iloc[frame]*RATIO])
-            elif this_data['co'][frame]==2:
+            elif this_data['idControlledObject'].iloc[frame]=="object2":
                 xy = np.array([this_data['o2.x'].iloc[frame]*RATIO, this_data['o2.y'].iloc[frame]*RATIO])
-            elif this_data['co'][frame]==3:
+            elif this_data['idControlledObject'].iloc[frame]=="object3":
                 xy = np.array([this_data['o3.x'].iloc[frame]*RATIO, this_data['o3.y'].iloc[frame]*RATIO])
-            elif this_data['co'][frame]==4:
+            elif this_data['idControlledObject'].iloc[frame]=="object4":
                 xy = np.array([this_data['o4.x'].iloc[frame]*RATIO, this_data['o4.y'].iloc[frame]*RATIO])
 
             # control_border = gz.arc(r=RAD, a1=0, a2=np.pi, fill=(0,0,0)).translate(xy)
