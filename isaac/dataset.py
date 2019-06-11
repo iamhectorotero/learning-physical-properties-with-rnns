@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import torch
 import torch.utils.data
 from tqdm import tqdm
@@ -21,8 +22,29 @@ def read_dataset(path):
     
     return dataset
 
+
+def get_sliding_windows_for_all_trials(trials, window_size=4):
+
+    old_shape = trials.shape
+    
+    window_starting_points = old_shape[1] - window_size
+    new_shape = (old_shape[0], window_starting_points, window_size, old_shape[-1])
+    
+    bytes_between_attributes = trials.strides[2]
+    bytes_between_rows_in_window = trials.strides[1]
+    bytes_between_window_starts = trials.strides[1]
+    bytes_between_trials = trials.strides[0]
+    
+    new_strides = (bytes_between_trials, 
+                   bytes_between_window_starts, 
+                   bytes_between_rows_in_window, 
+                   bytes_between_attributes)
+    
+    return as_strided(trials, new_shape, new_strides)
+
+
 def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
-                    transforms=()):
+                    transforms=(), sliding_window_size=1):
 
     X = []
     Y = []
@@ -37,6 +59,9 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False
         Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
 
     X = np.array(X)
+    if sliding_window_size > 1:
+        X = get_sliding_windows_for_all_trials(X, sliding_window_size)
+        X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
     Y = np.array(Y)
 
     X_train, X_val, Y_train, Y_val = split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes)
