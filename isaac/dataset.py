@@ -9,11 +9,11 @@ from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS
 
-def read_dataset(path):
+def read_dataset(path, first_n_trials=np.inf):
     dataset = []
     trial_count = 0
 
-    while True:
+    while trial_count < first_n_trials:
         try:
             dataset.append(pd.read_hdf(path, key="trial_"+str(trial_count), dtype=np.float32))
             trial_count += 1
@@ -44,13 +44,13 @@ def get_sliding_windows_for_all_trials(trials, window_size=4):
 
 
 def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
-                    transforms=(), sliding_window_size=1):
+                    transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS):
 
     X = []
     Y = []
 
     for trial in tqdm(dataset):
-        training_cols = trial[BASIC_TRAINING_COLS]
+        training_cols = trial[training_columns]
         
         for t in transforms:
             t(training_cols)
@@ -83,6 +83,40 @@ def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     
     return train_loader, val_loader, scaler
+
+
+def prepare_test_dataset(dataset, class_columns, batch_size=640, transforms=(), sliding_window_size=1,
+                         scaler=None, training_columns=BASIC_TRAINING_COLS):
+
+    X = []
+    Y = []
+
+    for trial in tqdm(dataset):
+        training_cols = trial[training_columns]
+
+        for t in transforms:
+            t(training_cols)
+
+        X.append(np.array(training_cols).astype(np.float32))
+        Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
+
+    X = np.array(X)
+    if sliding_window_size > 1:
+        X = get_sliding_windows_for_all_trials(X, sliding_window_size)
+        X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
+    Y = np.array(Y)
+
+    if scaler:
+        X_test = normalise(X, scaler, fit_scaler=False)
+
+    X_test = torch.from_numpy(X).cuda()
+    Y_test = torch.from_numpy(Y).type(torch.LongTensor).cuda()
+
+    test_dataset = torch.utils.data.TensorDataset(X_test, Y_test)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    return test_loader
+
 
 def normalise(X, scaler, fit_scaler=True):
     original_shape = X.shape
