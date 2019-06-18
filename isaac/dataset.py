@@ -9,41 +9,20 @@ from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS
 
-def read_dataset(path, first_n_trials=np.inf):
-    dataset = []
-    trial_count = 0
-
-    while trial_count < first_n_trials:
-        try:
-            dataset.append(pd.read_hdf(path, key="trial_"+str(trial_count), dtype=np.float32))
-            trial_count += 1
-        except KeyError:
-            break
+def read_dataset(path, n_trials=None):
     
+    with pd.HDFStore(path) as hdf:
+        keys = dir(hdf.root)[124:]
+        
+        if n_trials is None:
+            n_trials = len(keys)
+        trials = np.random.choice(keys, size=n_trials, replace=False)
+        dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
+        
     return dataset
 
 
-def get_sliding_windows_for_all_trials(trials, window_size=4):
-
-    old_shape = trials.shape
-    
-    window_starting_points = old_shape[1] - window_size
-    new_shape = (old_shape[0], window_starting_points, window_size, old_shape[-1])
-    
-    bytes_between_attributes = trials.strides[2]
-    bytes_between_rows_in_window = trials.strides[1]
-    bytes_between_window_starts = trials.strides[1]
-    bytes_between_trials = trials.strides[0]
-    
-    new_strides = (bytes_between_trials, 
-                   bytes_between_window_starts, 
-                   bytes_between_rows_in_window, 
-                   bytes_between_attributes)
-    
-    return as_strided(trials, new_shape, new_strides)
-
-
-def prepare_dataset(dataset, class_columns, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
+def prepare_dataset(dataset, class_columns, multiclass=False, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
                     transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS):
 
     X = []

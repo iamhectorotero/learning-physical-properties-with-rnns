@@ -54,12 +54,12 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
     return epoch_losses, epoch_accuracies, best_model
 
 
-def evaluate(model, val_loader, return_predicted=False):
+def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=None, step_size=None):
     predicted = []
     correct = 0
     total = 0
     for x_val, y_val in val_loader:
-        x_val = Variable(x_val)
+        x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
         y_hat = model(x_val)
 
         current_prediction = torch.max(y_hat.data, 1)[1]
