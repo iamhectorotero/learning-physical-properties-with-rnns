@@ -3,7 +3,8 @@ from torch.autograd import Variable
 from tqdm import tqdm
 from copy import deepcopy
 
-def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True):
+def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True,
+                  seq_start=None, seq_end=None, step_size=None):
     """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
     Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
     
@@ -20,7 +21,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
 
         for x, y in train_loader:
 
-            x = Variable(x[:, ::2, :])
+            x = Variable(x[:, seq_start:seq_end:step_size, :])
             y = Variable(y)
             # Clear gradients
             optimizer.zero_grad()
