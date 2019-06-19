@@ -153,4 +153,14 @@ def subsample_sequences(trials, step_size=2):
 
     
     return subsampled_sequences
+
+def split_in_subsequences(trials, seq_size):
+    subsequences = []
+    
+    for trial in trials:
+        length = len(trial)
+        for i in range(length//seq_size):
+            subsequences.append(trial.iloc[i*seq_size:(i+1)*seq_size])
+        
+    return subsequences
     

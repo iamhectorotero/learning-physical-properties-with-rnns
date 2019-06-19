@@ -37,13 +37,13 @@ class ComplexRNNModel(nn.Module):
         return out
     
     
-def initialise_model(network_dims, dropout=None, lr=0.01, seed=0):
+def initialise_model(network_dims, dropout=None, lr=0.01, seed=0, arch=ComplexRNNModel):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    model = ComplexRNNModel(*network_dims, dropout=dropout)
+    model = arch(*network_dims, dropout=dropout)
     model = model.cuda()
 
     error = nn.CrossEntropyLoss().cuda()
