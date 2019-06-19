@@ -35,7 +35,14 @@ def prepare_dataset(dataset, class_columns, multiclass=False, batch_size=640, no
             t(training_cols)
             
         X.append(np.array(training_cols).astype(np.float32))
-        Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
+
+        if multiclass:
+            y = []
+            for class_i_columns in class_columns:
+                y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
+            Y.append(y)
+        else:
+            Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
 
     X = np.array(X)
     if sliding_window_size > 1:
@@ -64,7 +71,7 @@ def prepare_dataset(dataset, class_columns, multiclass=False, batch_size=640, no
     return train_loader, val_loader, scaler
 
 
-def prepare_test_dataset(dataset, class_columns, batch_size=640, transforms=(), sliding_window_size=1,
+def prepare_test_dataset(dataset, class_columns, multiclass=False, batch_size=640, transforms=(), sliding_window_size=1,
                          scaler=None, training_columns=BASIC_TRAINING_COLS):
 
     X = []
@@ -77,7 +84,14 @@ def prepare_test_dataset(dataset, class_columns, batch_size=640, transforms=(), 
             t(training_cols)
 
         X.append(np.array(training_cols).astype(np.float32))
-        Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
+
+        if multiclass:
+            y = []
+            for class_i_columns in class_columns:
+                y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
+            Y.append(y)
+        else:
+            Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
 
     X = np.array(X)
     if sliding_window_size > 1:
@@ -106,6 +120,7 @@ def normalise(X, scaler, fit_scaler=True):
         
     return scaler.transform(X).reshape(original_shape)
 
+
 def split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes=True):
     
     if equiprobable_training_classes:
@@ -117,5 +132,48 @@ def split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes=
         
         return X[train_indices], X[test_indices], Y[train_indices], Y[test_indices]
     
-    return train_test_split(X, Y, test_size=test_size, random_state=42)
+    return train_test_split(X, Y, test_size=test_size, random_state=42, shuffle=False)
+
+
+def get_sliding_windows_for_all_trials(trials, window_size=4):
+
+    old_shape = trials.shape
+    
+    window_starting_points = old_shape[1] - window_size
+    new_shape = (old_shape[0], window_starting_points, window_size, old_shape[-1])
+    
+    bytes_between_attributes = trials.strides[2]
+    bytes_between_rows_in_window = trials.strides[1]
+    bytes_between_window_starts = trials.strides[1]
+    bytes_between_trials = trials.strides[0]
+    
+    new_strides = (bytes_between_trials, 
+                   bytes_between_window_starts, 
+                   bytes_between_rows_in_window, 
+                   bytes_between_attributes)
+    
+    return as_strided(trials, new_shape, new_strides)
+
         
+def sample_subsequences(trials, seq_size=600, n_samples=10):
+    subsequences = []
+
+    for trial in trials:
+        starting_points = np.random.randint(0, len(trial)-seq_size, size=n_samples)
+        
+        for start in starting_points:
+            subsequences.append(trial.iloc[start:start+seq_size])
+    
+    return subsequences
+
+
+def subsample_sequences(trials, step_size=2):
+    subsampled_sequences = []
+    
+    for trial in trials:
+        subsampled_sequences.append(trial.iloc[::step_size])
+        subsampled_sequences.append(trial.iloc[1::step_size])
+
+    
+    return subsampled_sequences
+    
