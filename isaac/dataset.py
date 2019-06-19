@@ -22,93 +22,70 @@ def read_dataset(path, n_trials=None):
     return dataset
 
 
-def prepare_dataset(dataset, class_columns, multiclass=False, batch_size=640, normalise_data=False, test_size=0.2, equiprobable_training_classes=False,
+def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, normalise_data=False, scaler=None,
                     transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS):
+    
+    """
+    datasets: list of datasets to which the same transformations will be applied.
+    class_columns: iterable. If multiclass is False, then it represents a single class columns. If multiclass is True,
+                   then it represents a list of classes for training a multiple-branch network.
+    multiclass: boolean. Modifies the behavior of class_columns as above.
+    batch_size: integer. batch size of every dataset loader
+    normalise_data: boolean. whether to apply a StandardScaler normalisation to the data. if datasets contains more than
+                    one dataset, it will be fitted in the first dataset and applied to the rest.
+    scaler: if None and normalise_data=True, it will be fitted to the data. If a scaler previously fitted, then it will
+            be used to transform every dataset.
+    transforms: iterable. Functions to be applied to each trial of every dataset.
+    sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
+    training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
+    """
+    
+    loaders = []
 
-    X = []
-    Y = []
+    for dataset in datasets:
+        X = []
+        Y = []
 
-    for trial in tqdm(dataset):
-        training_cols = trial[training_columns]
+        for trial in tqdm(dataset):
+            training_cols = trial[training_columns]
+
+            for t in transforms:
+                t(training_cols)
+
+            X.append(np.array(training_cols).astype(np.float32))
+
+            if multiclass:
+                y = []
+                for class_i_columns in class_columns:
+                    y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
+                Y.append(y)
+            else:
+                Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
+
+        X = np.array(X)
+        if sliding_window_size > 1:
+            X = get_sliding_windows_for_all_trials(X, sliding_window_size)
+            X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
+        Y = np.array(Y)
+
+        if normalise_data:
+            if scaler is None:
+                scaler = StandardScaler()
+                X = normalise(X, scaler, fit_scaler=True)
+            else:
+                X = normalise(X, scaler, fit_scaler=False) 
+
+        X = torch.from_numpy(X).cuda()
+        Y = torch.from_numpy(Y).type(torch.LongTensor).cuda()
+
+        tensor_dataset = torch.utils.data.TensorDataset(X, Y)
+        data_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=batch_size, shuffle=False)
+        loaders.append(data_loader)
         
-        for t in transforms:
-            t(training_cols)
-            
-        X.append(np.array(training_cols).astype(np.float32))
-
-        if multiclass:
-            y = []
-            for class_i_columns in class_columns:
-                y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
-            Y.append(y)
-        else:
-            Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
-
-    X = np.array(X)
-    if sliding_window_size > 1:
-        X = get_sliding_windows_for_all_trials(X, sliding_window_size)
-        X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
-    Y = np.array(Y)
-
-    X_train, X_val, Y_train, Y_val = split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes)
+    if len(datasets) == 1:
+        return loaders[0], scaler
     
-    scaler = None
-    if normalise_data:
-        scaler = StandardScaler()
-        X_train = normalise(X_train, scaler, fit_scaler=True)
-        X_val = normalise(X_val, scaler, fit_scaler=False) 
-        
-    X_train = torch.from_numpy(X_train).cuda()
-    X_val = torch.from_numpy(X_val).cuda()
-    Y_train = torch.from_numpy(Y_train).type(torch.LongTensor).cuda()
-    Y_val = torch.from_numpy(Y_val).type(torch.LongTensor).cuda()
-    
-    train_dataset = torch.utils.data.TensorDataset(X_train, Y_train)
-    val_dataset = torch.utils.data.TensorDataset(X_val, Y_val)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    
-    return train_loader, val_loader, scaler
-
-
-def prepare_test_dataset(dataset, class_columns, multiclass=False, batch_size=640, transforms=(), sliding_window_size=1,
-                         scaler=None, training_columns=BASIC_TRAINING_COLS):
-
-    X = []
-    Y = []
-
-    for trial in tqdm(dataset):
-        training_cols = trial[training_columns]
-
-        for t in transforms:
-            t(training_cols)
-
-        X.append(np.array(training_cols).astype(np.float32))
-
-        if multiclass:
-            y = []
-            for class_i_columns in class_columns:
-                y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
-            Y.append(y)
-        else:
-            Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
-
-    X = np.array(X)
-    if sliding_window_size > 1:
-        X = get_sliding_windows_for_all_trials(X, sliding_window_size)
-        X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
-    Y = np.array(Y)
-
-    if scaler:
-        X_test = normalise(X, scaler, fit_scaler=False)
-
-    X_test = torch.from_numpy(X).cuda()
-    Y_test = torch.from_numpy(Y).type(torch.LongTensor).cuda()
-
-    test_dataset = torch.utils.data.TensorDataset(X_test, Y_test)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-    return test_loader
+    return loaders, scaler
 
 
 def normalise(X, scaler, fit_scaler=True):
