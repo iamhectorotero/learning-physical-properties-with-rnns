@@ -2,6 +2,12 @@ import torch
 from torch.autograd import Variable
 from tqdm import tqdm
 from copy import deepcopy
+import joblib
+from .models import ComplexRNNModel
+from .dataset import read_dataset, prepare_test_dataset
+from .utils import plot_confusion_matrix
+import numpy as np
+
 
 def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True,
                   seq_start=None, seq_end=None, step_size=None):
@@ -73,3 +79,29 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
     if return_predicted:
         return accuracy, predicted
     return accuracy
+
+
+def evaluate_saved_model(model_path, network_dims, test_dataset_path, class_columns, seq_start=None, 
+                         seq_end=None, step_size=None, scaler_path=None):
+    if scaler_path:
+        scaler = joblib.load(scaler_path)
+    else:
+        scaler = None
+        
+    model = ComplexRNNModel(*network_dims)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+    model = model.cuda()
+    
+    all_trials = read_dataset(test_dataset_path)
+    test_loader = prepare_test_dataset(all_trials, class_columns, scaler=scaler)
+    
+    accuracy, predicted = evaluate(model, test_loader, return_predicted=True, step_size=step_size)
+    
+    print("Model's accuracy on test set:", accuracy)
+    
+    predicted = [pred.cpu() for pred in predicted]
+    Y_test = np.concatenate([y.cpu().numpy() for x, y in test_loader])
+    
+    plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=False)
+    plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
