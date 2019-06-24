@@ -9,13 +9,16 @@ from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS
 
-def read_dataset(path, n_trials=None):
+def read_dataset(path, n_trials=None, seed=0):
+    np.random.seed(seed)
     
     with pd.HDFStore(path) as hdf:
         keys = dir(hdf.root)[124:]
-        
+        keys = sorted(keys)
+
         if n_trials is None:
             n_trials = len(keys)
+        
         trials = np.random.choice(keys, size=n_trials, replace=False)
         dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
         
