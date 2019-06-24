@@ -82,7 +82,7 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
 
 
 def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None, 
-                         seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel):
+                         seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False):
     if scaler_path:
         scaler = joblib.load(scaler_path)
     else:
@@ -97,7 +97,7 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
         trials = read_dataset(test_dataset_path)
         
     test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=True, 
-                                     scaler=scaler, training_columns=training_columns)
+                                     scaler=scaler, training_columns=training_columns, multiclass=multiclass)
 
     
     accuracy, predicted = evaluate(model, test_loader, return_predicted=True, step_size=step_size)
