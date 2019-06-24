@@ -163,15 +163,3 @@ def split_in_subsequences(trials, seq_size):
             subsequences.append(trial.iloc[i*seq_size:(i+1)*seq_size])
         
     return subsequences
-
-def add_mouse_columns_to_passive_trials(trials):
-    
-    additional_columns = list(set(YOKED_TRAINING_COLS) - set(BASIC_TRAINING_COLS))
-    df = pd.DataFrame(np.zeros((len(trials[0]), len(additional_columns))), columns=additional_columns)
-    
-    new_trials = []
-    for trial in trials:
-        new_trials.append(pd.concat((trial, df), axis=1, copy=False))
-    
-    return new_trials
-        
