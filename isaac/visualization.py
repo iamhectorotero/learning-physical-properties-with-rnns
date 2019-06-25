@@ -51,7 +51,7 @@ def make_frame_curried(this_data):
 
         # Mouse cursor
         if 'mouseY' in this_data.columns:
-            cursor_xy = np.array([this_data['mouseX'].iloc[frame], this_data['mouseY'].iloc[frame]])
+            cursor_xy = np.array([this_data['mouseX'].iloc[frame]*RATIO, this_data['mouseY'].iloc[frame]*RATIO])
         else:
             cursor_xy = np.array([0, 0])
 
