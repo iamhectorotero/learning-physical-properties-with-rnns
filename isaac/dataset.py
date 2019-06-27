@@ -7,9 +7,9 @@ import torch
 import torch.utils.data
 from tqdm import tqdm
 
-from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS
+from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
 
-def read_dataset(path, n_trials=None, seed=0):
+def read_dataset(path, n_trials=None, seed=0, cols=None):  
     np.random.seed(seed)
     
     with pd.HDFStore(path) as hdf:
@@ -20,7 +20,14 @@ def read_dataset(path, n_trials=None, seed=0):
             n_trials = len(keys)
         
         trials = np.random.choice(keys, size=n_trials, replace=False)
-        dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
+        
+        if cols is not None:
+            cols = list(cols)
+            cols += MASS_CLASS_COLS
+            cols += FORCE_CLASS_COLS
+            dataset = [hdf[trial_i][cols] for trial_i in tqdm(trials)]
+        else:
+            dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
         
     return dataset
 
@@ -42,6 +49,9 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
     sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
     training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
     """
+    
+    training_columns = list(training_columns)
+    class_columns = list(class_columns)
     
     loaders = []
 
