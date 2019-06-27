@@ -94,10 +94,16 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
 
 def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None, 
                          seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False):
+    
+    class_columns = list(class_columns)
+    training_columns = list(training_columns)
+    
     if scaler_path:
         scaler = joblib.load(scaler_path)
+        normalise_data=True
     else:
         scaler = None
+        normalise_data=False
         
     model = arch(*network_dims)
     model.load_state_dict(torch.load(model_path))
