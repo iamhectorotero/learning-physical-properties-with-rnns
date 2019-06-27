@@ -113,11 +113,11 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
     if trials is None:
         trials = read_dataset(test_dataset_path)
         
-    test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=True, 
+    test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=normalise_data, 
                                      scaler=scaler, training_columns=training_columns, multiclass=multiclass)
 
     
-    accuracy, predicted = evaluate(model, test_loader, return_predicted=True, step_size=step_size)
+    accuracy, predicted = evaluate(model, test_loader, return_predicted=True, seq_start=seq_start, step_size=step_size, seq_end=seq_end)
     
     print("Model's accuracy on test set:", accuracy)
     
