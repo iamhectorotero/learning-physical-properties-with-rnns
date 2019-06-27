@@ -10,17 +10,41 @@ import numpy as np
 
 
 def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True,
-                  seq_start=None, seq_end=None, step_size=None):
+                  seq_start=None, seq_end=None, step_size=None, patience=np.inf):
     """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
     Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
     
     best_model, best_val_accuracy = None, 0
     epoch_losses = []
     epoch_accuracies = [[],[]]
+    epochs_without_improvement = 0
     
     pbar = tqdm(range(num_epochs))
     
     for epoch in pbar:
+        model.eval()
+        
+        train_accuracy = evaluate(model, train_loader, seq_start=seq_start, seq_end=seq_end, step_size=step_size)
+        epoch_accuracies[0].append(train_accuracy)
+        val_accuracy = evaluate(model, val_loader, seq_start=seq_start, seq_end=seq_end, step_size=step_size)
+        epoch_accuracies[1].append(val_accuracy)
+
+        if val_accuracy > best_val_accuracy:
+            best_model = deepcopy(model)
+            best_val_accuracy = val_accuracy
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
+            if epochs_without_improvement > patience:
+                break
+            
+        if print_stats_per_epoch:
+            if len(epoch_losses) == 0:
+                this_epoch_loss = -1.
+            else:
+                this_epoch_loss = epoch_losses[-1]
+            pbar.set_description("Train_loss (%.2f)\t Train_acc (%.2f)\t Val_acc (%.2f)" % (this_epoch_loss, train_accuracy, val_accuracy))
+
         model.train()
         
         epoch_loss = 0
@@ -43,20 +67,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
             epoch_loss += loss.item()
 
         epoch_losses.append(epoch_loss / len(train_loader))
-
-        model.eval()
-        train_accuracy = evaluate(model, train_loader)
-        epoch_accuracies[0].append(train_accuracy)
-        val_accuracy = evaluate(model, val_loader)
-        epoch_accuracies[1].append(val_accuracy)
-
-        if val_accuracy > best_val_accuracy:
-            best_model = deepcopy(model)
-            best_val_accuracy = val_accuracy
-            
-        if print_stats_per_epoch:
-            pbar.set_description("Train_loss (%.2f)\t Train_acc (%.2f)\t Val_acc (%.2f)" % (epoch_losses[-1], train_accuracy, val_accuracy))
-    
+        
     return epoch_losses, epoch_accuracies, best_model
 
 
