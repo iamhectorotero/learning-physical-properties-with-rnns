@@ -9,14 +9,14 @@ from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
 
-def read_dataset(path, n_trials=None, seed=0, cols=None):  
+def read_dataset(path, n_trials=None, seed=0, cols=None):
     np.random.seed(seed)
-    
+
     with pd.HDFStore(path) as hdf:
         keys = dir(hdf.root)[124:]
         keys = sorted(keys)
 
-        if n_trials is None:
+        if n_trials is None or n_trials > len(keys):
             n_trials = len(keys)
         
         trials = np.random.choice(keys, size=n_trials, replace=False)
@@ -33,7 +33,8 @@ def read_dataset(path, n_trials=None, seed=0, cols=None):
 
 
 def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, normalise_data=False, scaler=None,
-                    transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS):
+                    transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS,
+                    categorical_columns=()):
     
     """
     datasets: list of datasets to which the same transformations will be applied.
@@ -49,10 +50,11 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
     sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
     training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
     """
-    
+
     training_columns = list(training_columns)
+    cat_columns_bool_index = np.array([col in categorical_columns for col in training_columns])
     class_columns = list(class_columns)
-    
+
     loaders = []
 
     for dataset in datasets:
@@ -61,7 +63,7 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
 
         for trial in tqdm(dataset):
             training_cols = trial[training_columns]
-
+            
             for t in transforms:
                 t(training_cols)
 
@@ -84,9 +86,9 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
         if normalise_data:
             if scaler is None:
                 scaler = StandardScaler()
-                X = normalise(X, scaler, fit_scaler=True)
+                X = normalise(X, scaler, fit_scaler=True, skip_columns_bool_index=cat_columns_bool_index)
             else:
-                X = normalise(X, scaler, fit_scaler=False) 
+                X = normalise(X, scaler, fit_scaler=False, skip_columns_bool_index=cat_columns_bool_index)
 
         X = torch.from_numpy(X).cuda()
         Y = torch.from_numpy(Y).type(torch.LongTensor).cuda()
@@ -94,25 +96,30 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
         tensor_dataset = torch.utils.data.TensorDataset(X, Y)
         data_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=batch_size, shuffle=False)
         loaders.append(data_loader)
-        
+
     if len(datasets) == 1:
         return loaders[0], scaler
-    
+
     return loaders, scaler
 
 
-def normalise(X, scaler, fit_scaler=True):
+def normalise(X, scaler, fit_scaler=True, skip_columns_bool_index=None):
     original_shape = X.shape
     X = X.reshape(-1, original_shape[-1])
 
+    if skip_columns_bool_index is None:
+        skip_columns_bool_index = np.full(original_shape[-1], False)
+
     if fit_scaler:
-        scaler.fit(X)
-        
-    return scaler.transform(X).reshape(original_shape)
+        scaler.fit(X[:, ~skip_columns_bool_index])
+
+    X[:, ~skip_columns_bool_index] =  scaler.transform(X[:, ~skip_columns_bool_index])
+
+    return X.reshape(original_shape)
 
 
 def split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes=True):
-    
+
     if equiprobable_training_classes:
         classes, counts = np.unique(Y, return_counts=True)
         min_class_count = int(min(counts) * (1 - test_size))
