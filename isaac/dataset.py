@@ -34,7 +34,7 @@ def read_dataset(path, n_trials=None, seed=0, cols=None):
 
 def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, normalise_data=False, scaler=None,
                     transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS,
-                    categorical_columns=()):
+                    categorical_columns=(), normalisation_cols=()):
     
     """
     datasets: list of datasets to which the same transformations will be applied.
@@ -50,9 +50,14 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
     sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
     training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
     """
+    
+    if len(normalisation_cols) == 0:
+        normalisation_cols = training_columns
 
     training_columns = list(training_columns)
-    cat_columns_bool_index = np.array([col in categorical_columns for col in training_columns])
+    columns_to_normalise_bool_index = np.array([(col not in categorical_columns) and 
+                                                (col in normalisation_cols) 
+                                                for col in training_columns])
     class_columns = list(class_columns)
 
     loaders = []
@@ -86,9 +91,9 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
         if normalise_data:
             if scaler is None:
                 scaler = StandardScaler()
-                X = normalise(X, scaler, fit_scaler=True, skip_columns_bool_index=cat_columns_bool_index)
+                X = normalise(X, scaler, fit_scaler=True, columns_to_normalise_bool_index=columns_to_normalise_bool_index)
             else:
-                X = normalise(X, scaler, fit_scaler=False, skip_columns_bool_index=cat_columns_bool_index)
+                X = normalise(X, scaler, fit_scaler=False, columns_to_normalise_bool_index=columns_to_normalise_bool_index)
 
         X = torch.from_numpy(X).cuda()
         Y = torch.from_numpy(Y).type(torch.LongTensor).cuda()
@@ -103,17 +108,17 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
     return loaders, scaler
 
 
-def normalise(X, scaler, fit_scaler=True, skip_columns_bool_index=None):
+def normalise(X, scaler, fit_scaler=True, columns_to_normalise_bool_index=None):
     original_shape = X.shape
     X = X.reshape(-1, original_shape[-1])
 
-    if skip_columns_bool_index is None:
-        skip_columns_bool_index = np.full(original_shape[-1], False)
+    if columns_to_normalise_bool_index is None:
+        columns_to_normalise_bool_index = np.full(original_shape[-1], True)
 
     if fit_scaler:
-        scaler.fit(X[:, ~skip_columns_bool_index])
+        scaler.fit(X[:, columns_to_normalise_bool_index])
 
-    X[:, ~skip_columns_bool_index] =  scaler.transform(X[:, ~skip_columns_bool_index])
+    X[:, columns_to_normalise_bool_index] =  scaler.transform(X[:, columns_to_normalise_bool_index])
 
     return X.reshape(original_shape)
 
