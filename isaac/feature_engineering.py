@@ -15,8 +15,8 @@ def add_mouse_columns_to_passive_trials(trials):
 def set_mouse_velocities(trials):
     
     for trial in trials:
-        trial[MOUSE_POSITION_COLS]  /= 100
-        positions = trial[MOUSE_POSITION_COLS]
+        trial[list(MOUSE_POSITION_COLS)]  /= 100
+        positions = trial[list(MOUSE_POSITION_COLS)]
         
         shifted_positions = positions.shift(1).fillna(positions.iloc[0])
         trial[["mouse.vx", "mouse.vy"]] = np.abs((shifted_positions - positions) / S_PER_FRAME)
