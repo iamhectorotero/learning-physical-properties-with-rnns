@@ -9,13 +9,11 @@ class ComplexRNNModel(nn.Module):
         # RNN
         self.rec_layer = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         # Readout layer
-        self.dropout = nn.Dropout(p=dropout/2)
         self.fc = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
         out, _ = self.rec_layer(x)
-        out = self.dropout(out[:, -1, :])
-        out = self.fc(out) 
+        out = self.fc(out[:, -1, :]) 
         return out
     
     
