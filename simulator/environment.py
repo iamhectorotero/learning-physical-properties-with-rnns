@@ -17,8 +17,10 @@ from .information_gain import *
 import time
 
 class physic_env():
-    def __init__(self, cond, mass_list, force_list, init_mouse, time_stamp, ig_mode, prior,reward_stop):
+    def __init__(self, cond, mass_list, force_list, init_mouse, time_stamp, ig_mode, prior,reward_stop, mass_answers={}, force_answers={}):
         # --- pybox2d world setup ---
+        self.mass_answers = mass_answers
+        self.force_answers = force_answers
 
         # Create the world
         self.world = world(gravity=(0, 0), doSleep=True)
@@ -141,16 +143,18 @@ class physic_env():
             cond['lf'] = f
         return cond
 
-    def reset(self):
+    def reset(self, include_mouse_info=False):
         time_stamp = self.T
         self.cond = self.cond_list[np.random.randint(len(self.cond_list))]
         self.update_bodies(self.cond)
         control_vec = {'obj': np.repeat(0, time_stamp), 'x': np.repeat(
-            self.init_mouse[0], time_stamp), 'y': np.repeat(self.init_mouse[1], time_stamp)}
+            self.init_mouse[0], time_stamp), 'y': np.repeat(self.init_mouse[1], time_stamp),
+            'vx': np.repeat(0, time_stamp), 'vy': np.repeat(0, time_stamp),
+            'click': np.repeat(False, time_stamp)}
         true_key = (tuple(self.cond['mass']), tuple(np.array(self.cond['lf']).flatten()))
-        true_data = {true_key: self.simulate_in_all(self.cond, control_vec)}
+        true_data = {true_key: self.simulate_in_all(self.cond, control_vec, include_mouse_info)}
         self.data = self.initial_data(self.bodies)
-        _, states = generate_trajectory(true_data,True)
+        _, states = generate_trajectory(true_data, True, include_mouse_info)
         self.prior = copy.deepcopy(self.PRIOR)
         self.step_reward = []
         return states
@@ -162,7 +166,7 @@ class physic_env():
                 objname = 'o' + str(i + 1)
                 local_data[objname] = {'x': [], 'y': [], 'vx': [], 'vy': [], 'rotation': []}
             local_data['co'] = []
-            local_data['mouse'] = []
+            local_data['mouse'] = {}
         else:
             # initialize data by specified bodies and init_mouse
             # for self.data
@@ -175,9 +179,10 @@ class physic_env():
                 local_data['mouse'] = {'x': [init_mouse[0]], 'y': [init_mouse[1]]}
             else:
                 local_data['mouse'] = {'x': [self.init_mouse[0]], 'y': [self.init_mouse[1]]}
+            local_data['mouse'].update({'vx': [0], 'vy': [0], 'click': [False]})
         return local_data
 
-    def update_data(self,true_data,control_vec):
+    def update_data(self,true_data,control_vec, include_mouse_info=False):
         for obj in ['o1', 'o2', 'o3', 'o4']:
             self.data[obj]['x'] += true_data[obj]['x']
             self.data[obj]['y'] += true_data[obj]['y']
@@ -187,8 +192,12 @@ class physic_env():
         self.data['co'] += control_vec['obj'].tolist()
         self.data['mouse']['x'] += control_vec['x'].tolist()
         self.data['mouse']['y'] += control_vec['y'].tolist()
+        if include_mouse_info:
+            self.data['mouse']['vx'] += control_vec['vx'].tolist()
+            self.data['mouse']['vy'] += control_vec['vy'].tolist()
+            self.data['mouse']['click'] += control_vec['click'].tolist()
 
-    def update_simulate_data(self,local_data):
+    def update_simulate_data(self,local_data, include_mouse_info=False):
         for i in range(0,len(self.bodies)):
             objname = 'o' + str(i + 1)
             local_data[objname]['x'].append(self.bodies[i].position[0])
@@ -196,6 +205,13 @@ class physic_env():
             local_data[objname]['vx'].append(self.bodies[i].linearVelocity[0])
             local_data[objname]['vy'].append(self.bodies[i].linearVelocity[1])
             local_data[objname]['rotation'].append(self.bodies[i].angle)
+        if include_mouse_info:
+            local_data['mouse']['x'] = self.data['mouse']['x'][-1]
+            local_data['mouse']['y'] = self.data['mouse']['y'][-1]
+            local_data['mouse']['vx'] = self.data['mouse']['vx'][-1]
+            local_data['mouse']['vy'] = self.data['mouse']['vy'][-1]
+            local_data['mouse']['click'] = self.data['mouse']['click'][-1]
+            local_data['co'] = self.data['co'][-1]
         return local_data
 
     def simulate(self, cond, control_vec, t):
@@ -234,19 +250,19 @@ class physic_env():
             self.bodies[i].angularVelocity = 0
             self.bodies[i].angle = 0
 
-    def update_simulate_bodies(self,cond,control_vec,t,local_data):
+    def update_simulate_bodies(self,cond,control_vec,t,local_data, include_mouse_info=False):
         self.simulate(cond, control_vec, t)
         self.world.Step(TIME_STEP, 3, 3)
         self.world.ClearForces()
-        local_data = self.update_simulate_data(local_data)
+        local_data = self.update_simulate_data(local_data, include_mouse_info)
         return local_data
 
-    def simulate_in_all(self, cond,control_vec):
+    def simulate_in_all(self, cond,control_vec, include_mouse_info=False):
         local_data = self.initial_data()
         for t in range(0, self.T):
-            local_data = self.update_simulate_bodies(cond, control_vec,t,local_data)
+            local_data = self.update_simulate_bodies(cond, control_vec, t, local_data,
+                                                     include_mouse_info)
         return local_data
-
 
     def update_bodies(self, cond):
 
@@ -257,6 +273,97 @@ class physic_env():
             self.bodies[i].linearVelocity = vec2(cond['svs'][i]['x'], cond['svs'][i]['y'])
             self.bodies[i].mass = cond['mass'][i]
             self.bodies[i].fixtures[0].density = cond['mass'][i]
+
+    def get_object_in_control_reward(self, obj):
+        """If an object is in control and in the previous frame none was, return positive reward"""
+        if obj != 0:
+            if len(self.data['co']) == 0 or self.data['co'][-1] == 0:
+                return 1.
+        return 0.
+
+    def is_mouse_on_top_of_body(self, mouse_x, mouse_y, body):
+        return body.fixtures[0].TestPoint((mouse_x, mouse_y))
+
+    def get_object_under_control(self, mouse_x, mouse_y, click, last_frame_obj_in_control):
+        if not click:
+            return 0
+
+        if last_frame_obj_in_control != 0 and click:
+            return last_frame_obj_in_control
+
+        for i, body in enumerate(self.bodies):
+            if self.is_mouse_on_top_of_body(mouse_x, mouse_y, body):
+                return i+1
+        return 0
+
+    def get_mass_true_answer(self):
+        if self.cond['mass'][0] > self.cond['mass'][1]:
+                return "A is heavier"
+        if self.cond['mass'][0] < self.cond['mass'][1]:
+                return "B is heavier"
+        if self.cond['mass'][0] == self.cond['mass'][1]:
+                return "same"
+
+    def get_force_true_answer(self):
+        if self.cond['lf'][0][1] > 0: 
+            return "attract"
+        if self.cond['lf'][0][1] < 0:
+            return "repel"
+        if self.cond['lf'][0][1] == 0:
+            return "none"
+
+    def is_answer_correct(self, action_idx, question_type):
+        if question_type == 'mass':
+            if self.get_mass_true_answer() == self.mass_answers[action_idx]:
+                return True
+        if question_type == "force":
+            if self.get_force_true_answer() == self.force_answers[action_idx]:
+                return True
+        return False
+
+    def step_active(self, action_idx, generate_mouse_action, question_type):
+        reward = 0.0
+        stop_flag = False
+        correct_answer = False
+        info = {"correct_answer": False, "incorrect_answer": False, "control": 0}
+
+        if action_idx in self.mass_answers or action_idx in self.force_answers:
+            stop_flag = True
+            if self.is_answer_correct(action_idx, question_type):
+                info["correct_answer"] = True
+                reward += 10.
+            else:
+                info["incorrect_answer"] = True
+                reward -= 10.
+
+        click, mouse_x, mouse_y, mouse_vx, mouse_vy = generate_mouse_action(action_idx,
+                                                      self.data['mouse']['x'][-1],
+                                                      self.data['mouse']['y'][-1],
+                                                      self.data['mouse']['vx'][-1],
+                                                      self.data['mouse']['vy'][-1],
+                                                      self.data['mouse']['click'][-1],
+                                                      self.data['co'][-1])
+        obj = self.get_object_under_control(mouse_x, mouse_y, click, self.data['co'][-1])
+        info["control"] = obj
+
+        control_vec = {'obj': np.array([obj]), 'x': np.array([mouse_x]), 'y': np.array([mouse_y]),
+                       'vx': np.array([mouse_vx]), 'vy': np.array([mouse_vy]), 
+                       'click': np.array([click])}
+
+        current_cond = self.update_condition(self.cond['mass'], self.cond['lf'])
+        true_key = (tuple(self.cond['mass']), tuple(np.array(self.cond['lf']).flatten()))
+        self.update_bodies(current_cond)
+        true_data = {true_key: self.simulate_in_all(current_cond, control_vec, 
+                     include_mouse_info=True)}
+
+        self.update_data(true_data[true_key], control_vec, include_mouse_info=True)
+        true_trace, states = generate_trajectory(true_data, True, include_mouse_info=True)
+        current_time = len(self.data['o1']['x']) - 1
+
+        if current_time >= self.cond['timeout']:
+            stop_flag = True
+
+        return states, reward, stop_flag, info
 
     def step_passive(self):
         """Generate simulations for the passive settings, that is, without any mouse interaction

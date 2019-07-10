@@ -106,3 +106,4 @@ venv.bak/
 # .mp4
 *.mp4
 safe/
+*_model
