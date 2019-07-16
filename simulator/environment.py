@@ -28,7 +28,7 @@ class physic_env():
         self.walls = []
         self.data = {}
         self.cond_list = cond
-        self.cond = cond[np.random.randint(len(cond))]
+        self.cond = cond[0]
         # self.cond = cond
         self.init_mouse = init_mouse
         self.add_pucks()
@@ -145,7 +145,11 @@ class physic_env():
 
     def reset(self, include_mouse_info=False):
         time_stamp = self.T
-        self.cond = self.cond_list[np.random.randint(len(self.cond_list))]
+        self.cond_list.pop(0)
+        if len(self.cond_list) == 0:
+            print("all conditions visited")
+            exit()
+        self.cond = self.cond_list[0]
         self.update_bodies(self.cond)
         control_vec = {'obj': np.repeat(0, time_stamp), 'x': np.repeat(
             self.init_mouse[0], time_stamp), 'y': np.repeat(self.init_mouse[1], time_stamp),
