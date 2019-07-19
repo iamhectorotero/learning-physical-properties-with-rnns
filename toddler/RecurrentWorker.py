@@ -18,7 +18,7 @@ from simulator.environment import physic_env
 from action_coding import get_mouse_action, mass_answers_idx, force_answers_idx
 
 CHECKPOINT = 1000
-MOUSE_EXPLORATION_FRAMES = 1000
+MOUSE_EXPLORATION_FRAMES = 600
 TIMEOUT = 1800
 I_TARGET = 35 # Every 10 episodes update target network
 
@@ -68,7 +68,7 @@ def store_transition(episode, state, action, reward, new_state, done, v_hh, t_hh
             episode[i].append(element)
 
 
-def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), idx=0, lock=None):
+def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), idx=0, lock=None, experience_replay=(), agent_answers=()):
 
     np.random.seed(idx)
     for cond in train_cond:
@@ -87,14 +87,14 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         get_answer = env.get_force_true_answer
         classes = ["attract", "repel", "none"]
 
+    agent_answers = list(agent_answers)
+    experience_replay = list(experience_replay)
     epsilon = exponential_decay(counter.value)
-    agent_answers = []
     object_in_control = 0
-    experience_replay = []
-    SAMPLE_N_EPISODES = 32
+    SAMPLE_N_EPISODES = 64
 
-    pbar = trange(startingEpisode, startingEpisode + numEpisodes - 1)
-    for episodeNumber in range(startingEpisode, startingEpisode + numEpisodes - 1):
+    pbar = tqdm(initial=startingEpisode, total=startingEpisode + numEpisodes)
+    for episodeNumber in range(startingEpisode, startingEpisode + numEpisodes):
         epsilon = exponential_decay(counter.value)
         done = False
         frame = 0
@@ -102,7 +102,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         state = env.reset(True)
         answer = get_answer()
         answer = np.array(classes) == answer
-        state = to_state_representation(state, answer=answer)
+        state = to_state_representation(state, frame=frame)
 
         object_A_in_control = False
         object_B_in_control = False
@@ -111,23 +111,24 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         loss = 0
         while not done:
             frame += 1
-            """if frame % 2 == 1:
+            if frame % 2 == 0:
                 NO_OP = 0
                 new_state, reward, done, info = env.step_active(NO_OP, get_mouse_action, question_type)
                 new_state = to_state_representation(new_state, answer=answer)
-                continue"""
-            value_network_hh = valueNetwork.hh if valueNetwork.hh is not None else torch.zeros(2, 1, 30).cuda()
+                continue
+
+            value_network_hh = valueNetwork.hh if valueNetwork.hh is not None else torch.zeros(1, 1, 1000).cuda()
             action = e_greedy_action(state, valueNetwork, epsilon, frame, None)
             new_state, reward, done, info = env.step_active(action, get_mouse_action, question_type)
-            new_state = to_state_representation(new_state, answer=answer)
+            new_state = to_state_representation(new_state, frame=frame)
 
             if info["correct_answer"]:
-                reward = 5.
+                reward = 1.
                 agent_answers.append(1)
 
             if info["incorrect_answer"]:
                 agent_answers.append(0)
-                reward = -5.
+                reward = -1
 
             if info["control"] == 1 and not object_A_in_control:
                 reward += 0
@@ -142,24 +143,21 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
             store_transition(episode, state, action, reward, new_state, done, value_network_hh, None)
             state = new_state
 
-            # saved_hidden_state = valueNetwork.hh
-            # valueNetwork.reset_hidden_states(saved_hidden_state)
-
         experience_replay.append(episode)
-        if len(experience_replay) > 50:
-            experience_replay.pop(0)
+        if len(experience_replay) >= SAMPLE_N_EPISODES:
+            memory_size = len(experience_replay)
+            sampled_experience_indices = np.random.choice(memory_size,
+                                                          SAMPLE_N_EPISODES,
+                                                          replace=False)
+            sampled_experience = [experience_replay[i] for i in sampled_experience_indices]
+            # sampled_experience = experience_replay[-SAMPLE_N_EPISODES:]
+            valueNetwork.reset_hidden_states()
+            loss = learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer)
 
-        memory_size = len(experience_replay)
-        sampled_experience_indices = np.random.choice(memory_size,
-                                                      min(SAMPLE_N_EPISODES, memory_size),
-                                                      replace=False)
-        sampled_experience = [experience_replay[i] for i in sampled_experience_indices]
-        valueNetwork.reset_hidden_states()
-        # target_network.reset_hidden_states()
-        loss = learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer)
+            if len(experience_replay) == SAMPLE_N_EPISODES:
+                experience_replay.pop(0)
 
         valueNetwork.reset_hidden_states()
-        # target_network.reset_hidden_states()
 
         with lock:
             counter.value += 1
@@ -175,6 +173,8 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         pbar.update(1)
         pbar.set_description(desc)
 
+    pbar.close()
+    return experience_replay, agent_answers
 
 def SSE(outputs, targets):
     weights = torch.ones(len(outputs[0])).cuda()
@@ -204,7 +204,7 @@ def SSE(outputs, targets):
 """
 
 def learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer,
-          seq_length=1000):
+          seq_length=900):
 
     acc_loss = 0
     loss = 0
@@ -216,12 +216,15 @@ def learn(valueNetwork, target_network, sampled_experience, discountFactor, opti
     batch_value_hidden_states = []
     # batch_target_hidden_states = []
 
+    episode_length = [len(states) for states, _, _, _, _, _, _ in sampled_experience]
+    min_episode_length = min(episode_length)
+    # print(episode_length, min_episode_length)
+    seq_length = min(seq_length, min_episode_length)
+    starting_idx = -seq_length
+    end_idx = None
+
     for i, episode in enumerate(sampled_experience):
         states, actions, rewards, new_states, dones, value_hh, target_hh = episode
-
-        seq_length = min(seq_length, MOUSE_EXPLORATION_FRAMES)
-        starting_idx = -seq_length
-        end_idx = None
 
         batch_states.append(torch.cat(states, dim=1)[:, starting_idx:end_idx, :])
         batch_actions.append(actions[starting_idx:end_idx])
@@ -264,7 +267,7 @@ def learn(valueNetwork, target_network, sampled_experience, discountFactor, opti
     every_action_value = valueNetwork(states)
     outputs = [every_action_value[i, np.arange(every_action_value.shape[1]), actions[i]] for i in range(every_action_value.shape[0])]
     outputs = torch.stack(outputs)
-    error = nn.MSELoss()
+    error = nn.MSELoss().cuda()
 
     """if states.shape[0] > 1:
         print(every_action_value)
@@ -337,14 +340,14 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=()):
         state = env.reset(True)
         answer = get_answer()
         answer = np.array(classes) == answer
-        state = to_state_representation(state, answer=answer)
+        state = to_state_representation(state, frame=frame)
 
         while not done:
             frame += 1
             greedy_action = e_greedy_action(state, valueNetwork, epsilon, frame)
 
             new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
-            new_state = to_state_representation(new_state, answer=answer)
+            new_state = to_state_representation(new_state, frame=frame)
 
             if info["correct_answer"]:
                 is_answer_correct = True

@@ -87,39 +87,27 @@ if __name__ == "__main__" :
     val_cond = generate_cond(every_conf[repeated_val_indices])
 
     i = 0
+    experience_replay = ()
+    agent_answers = ()
     while True:
-        processes = []
-        for idx in range(0, args.num_processes):
+        agent_cond = train_cond[:episodes_per_agent]
+        train_cond = train_cond[episodes_per_agent:]
 
-            agent_cond = train_cond[:episodes_per_agent]
-            train_cond = train_cond[episodes_per_agent:]
+        startingEpisode = i * episodes_per_agent
 
-            startingEpisode = i * episodes_per_agent
-
-            trainingArgs = (value_network, target_value_network, optimizer, counter,
-                           episodes_per_agent, discountFactor, startingEpisode,
-                           mass_answers, force_answers, agent_cond, idx, lock)
-            train(*trainingArgs)
-            # p = mp.Process(target=train, args=trainingArgs)
-            """trainingArgs = (policy_network, optimizer, counter,
-                           episodes_per_agent, discountFactor, startingEpisode,
-                           mass_answers, force_answers, agent_cond, idx, lock)
-            p = mp.Process(target=train_pg, args=trainingArgs)"""
-            # p.start()
-            # processes.append(p)
-        for p in processes:
-            p.join()
-
-        i += 1
+        trainingArgs = (value_network, target_value_network, optimizer, counter,
+                       episodes_per_agent, discountFactor, startingEpisode,
+                       mass_answers, force_answers, agent_cond, 0, lock,
+                       experience_replay, agent_answers)
+        experience_replay, agent_answers = train(*trainingArgs)
 
         agent_cond = val_cond[:val_episodes_per_agent]
         val_cond = val_cond[val_episodes_per_agent:]
         valArgs = (value_network, mass_answers, force_answers, agent_cond)
-        # valArgs = (policy_network, mass_answers, force_answers, val_cond)
-        # p = mp.Process(target=validate, args=valArgs)
-        # p.start()
-        # p.join()
-        validate(*valArgs)
+        # validate(*valArgs)
+
+        i += 1
+
         if len(train_cond) == 0:
-            exit()
+            break
 
