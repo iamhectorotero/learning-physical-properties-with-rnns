@@ -27,7 +27,7 @@ class physic_env():
         self.bodies = []
         self.walls = []
         self.data = {}
-        self.cond_list = cond
+        self.cond_list = [None] + cond
         self.cond = cond[0]
         # self.cond = cond
         self.init_mouse = init_mouse
