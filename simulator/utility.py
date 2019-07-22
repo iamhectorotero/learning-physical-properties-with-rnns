@@ -155,12 +155,12 @@ def update_simulate_data(local_data,bodies):
         local_data[objname]['vy'].append(bodies[i].linearVelocity[1])
         local_data[objname]['rotation'].append(bodies[i].angle)
     return local_data
-def generate_trajectory(data,flag, include_mouse_info=False):
+def generate_trajectory(data,flag, include_mouse_info=False, bodies_names=("o1", "o2", "o3", "o4")):
     trajectory = {}
     states = []
     for key in data:
         dict_r_theta = {}
-        for obj in ['o1', 'o2', 'o3', 'o4']:
+        for obj in bodies_names:
             vx = np.array(data[key][obj]['vx'])
             vy = np.array(data[key][obj]['vy'])
             x = np.array(data[key][obj]['x'])
@@ -173,7 +173,7 @@ def generate_trajectory(data,flag, include_mouse_info=False):
             dict_r_theta[obj] = {'r':list(r),'rotation':list(theta)}
 
         if include_mouse_info:
-            one_hot_control = [data[key]['co'] == i for i in range(5)]
+            one_hot_control = [data[key]['co'] == i for i in range(len(bodies_names) + 1)]
             mouse_info =  [data[key]['mouse']['x'], data[key]['mouse']['y'],
                            data[key]['mouse']['vx'], data[key]['mouse']['vy'],
                            data[key]['mouse']['click']] + one_hot_control

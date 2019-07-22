@@ -4,13 +4,15 @@ import torch
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0., n_processes=1):
+    def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0.0):
         super(ValueNetwork, self).__init__()
+        self.project = nn.Linear(input_dim, input_dim)
         self.rec_layer = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.readout = nn.Linear(hidden_dim, output_dim)
         self.hh = None
 
     def forward(self, x):
+        x = self.project(x)
         out, self.hh = self.rec_layer(x, self.hh)
         out = self.readout(out)
         return out

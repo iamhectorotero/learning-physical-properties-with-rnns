@@ -40,18 +40,18 @@ if __name__ == "__main__" :
     lock = mp.Lock()
 
     torch.backends.cudnn.benchmark = False
-    net_params = {"input_dim":29, "hidden_dim":30, "n_layers":2, "output_dim":9, "dropout":0.5}
+    net_params = {"input_dim":12, "hidden_dim":40, "n_layers":4, "output_dim":6, "dropout":0.0}
     # policy_network = Policy(**net_params)
     value_network = ValueNetwork(**net_params).cuda()
-    target_value_network = deepcopy(value_network)
-    optimizer = SharedAdam(value_network.parameters(), lr=1e-3)
-    # optimizer = optim.Adam(policy_network.parameters(), lr=1e-7)
+    target_value_network = None
+    # optimizer = SharedAdam(value_network.parameters(), lr=1e-3)
+    optimizer = optim.Adam(value_network.parameters(), lr=1e-3)
 
-    value_network.share_memory()
-    target_value_network.share_memory()
-    optimizer.share_memory()
+    # value_network.share_memory()
+    # target_value_network.share_memory()
+    # optimizer.share_memory()
 
-    discountFactor = 0.9
+    discountFactor = 0.99
 
     every_conf = generate_every_world_configuration()
     every_world_answer = np.array(list(map(get_configuration_answer, every_conf)))
@@ -71,8 +71,8 @@ if __name__ == "__main__" :
     TOTAL_STEPS = int(32e6)
     N_WORLDS = 50000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 250
-    val_episodes_per_agent = 11
+    episodes_per_agent = 200
+    val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
     print("episodes_per_agent", episodes_per_agent)
@@ -89,6 +89,7 @@ if __name__ == "__main__" :
     i = 0
     experience_replay = ()
     agent_answers = ()
+    n_bodies = 1
     while True:
         agent_cond = train_cond[:episodes_per_agent]
         train_cond = train_cond[episodes_per_agent:]
@@ -98,13 +99,13 @@ if __name__ == "__main__" :
         trainingArgs = (value_network, target_value_network, optimizer, counter,
                        episodes_per_agent, discountFactor, startingEpisode,
                        mass_answers, force_answers, agent_cond, 0, lock,
-                       experience_replay, agent_answers)
+                       experience_replay, agent_answers, n_bodies)
         experience_replay, agent_answers = train(*trainingArgs)
 
         agent_cond = val_cond[:val_episodes_per_agent]
         val_cond = val_cond[val_episodes_per_agent:]
-        valArgs = (value_network, mass_answers, force_answers, agent_cond)
-        # validate(*valArgs)
+        valArgs = (value_network, mass_answers, force_answers, agent_cond, n_bodies)
+        validate(*valArgs)
 
         i += 1
 

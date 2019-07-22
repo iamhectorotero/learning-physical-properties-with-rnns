@@ -21,23 +21,24 @@ force_answers = {FIRST_ANSWER:"attract", SECOND_ANSWER:"repel", THIRD_ANSWER:"no
 force_answers_idx = {"attract": FIRST_ANSWER, "repel": SECOND_ANSWER, "none": THIRD_ANSWER}
 
 def update_velocity(vx, vy, action):
-    velocity_decrease = 1.5
-    velocity_increment = 1
+    velocity_decrease = 2.
+    velocity_increment = 0.25
 
-    if action == NO_OP:
+    if action == NO_OP or action == CLICK:
         vx /= velocity_decrease
         vy /= velocity_decrease
     elif action == ACCELERATE_IN_X:
         vx += velocity_increment
+        vy /= velocity_decrease
     elif action == ACCELERATE_IN_Y:
         vy += velocity_increment
+        vx /= velocity_decrease
     elif action == DECELERATE_IN_X:
         vx -= velocity_increment
+        vy /= velocity_decrease
     elif action == DECELERATE_IN_Y:
         vy -= velocity_increment
-    if action == CLICK:
         vx /= velocity_decrease
-        vy /= velocity_decrease
     return vx, vy
 
 def update_position(pos, vel, max_pos, min_pos):
@@ -45,10 +46,10 @@ def update_position(pos, vel, max_pos, min_pos):
     pos += vel * TIME_CONSTANT
     if pos > max_pos:
         pos = max_pos
-        vel = 0
+        vel = 0.
     if pos < min_pos:
         pos = min_pos
-        vel = 0
+        vel = 0.
 
     return pos, vel
 

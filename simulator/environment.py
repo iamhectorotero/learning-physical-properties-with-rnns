@@ -17,7 +17,7 @@ from .information_gain import *
 import time
 
 class physic_env():
-    def __init__(self, cond, mass_list, force_list, init_mouse, time_stamp, ig_mode, prior,reward_stop, mass_answers={}, force_answers={}):
+    def __init__(self, cond, mass_list, force_list, init_mouse, time_stamp, ig_mode, prior,reward_stop, mass_answers={}, force_answers={}, n_bodies=None):
         # --- pybox2d world setup ---
         self.mass_answers = mass_answers
         self.force_answers = force_answers
@@ -31,7 +31,8 @@ class physic_env():
         self.cond = cond[0]
         # self.cond = cond
         self.init_mouse = init_mouse
-        self.add_pucks()
+        self.bodies_names = []
+        self.add_pucks(n_bodies)
         self.add_static_walls()
         self.mass_list = mass_list
         self.force_list = force_list
@@ -51,10 +52,14 @@ class physic_env():
         #self.true_state_dic = {}
 
     # --- add pucks (bodies) ---
-    def add_pucks(self):
-        for i in range(0, len(self.cond['sls'])):
+    def add_pucks(self, n_bodies=None):
+        if n_bodies is None:
+            n_bodies = len(self.cond['sls'])
+
+        for i in range(0, n_bodies):
                 # Give each a unique name
             objname = 'o' + str(i + 1)
+            self.bodies_names.append(objname)
             # Create the body
             b = self.world.CreateDynamicBody(position=(self.cond['sls'][i]['x'], self.cond['sls'][i]['y']),
                                              linearDamping=0.05, fixedRotation=True,
@@ -127,7 +132,7 @@ class physic_env():
         cond = {}
         loc_list = []
         vel_list = []
-        for obj in ['o1', 'o2', 'o3', 'o4']:
+        for obj in self.bodies_names:
             loc_list.append(
                 {'x': self.data[obj]['x'][-1], 'y': self.data[obj]['y'][-1]})
             vel_list.append(
@@ -143,7 +148,7 @@ class physic_env():
             cond['lf'] = f
         return cond
 
-    def reset(self, include_mouse_info=False):
+    def reset(self, include_mouse_info=False, init_mouse=None):
         time_stamp = self.T
         self.cond_list.pop(0)
         if len(self.cond_list) == 0:
@@ -157,13 +162,13 @@ class physic_env():
             'click': np.repeat(False, time_stamp)}
         true_key = (tuple(self.cond['mass']), tuple(np.array(self.cond['lf']).flatten()))
         true_data = {true_key: self.simulate_in_all(self.cond, control_vec, include_mouse_info)}
-        self.data = self.initial_data(self.bodies)
-        _, states = generate_trajectory(true_data, True, include_mouse_info)
+        self.data = self.initial_data(self.bodies, init_mouse)
+        _, states = generate_trajectory(true_data, True, include_mouse_info, self.bodies_names)
         self.prior = copy.deepcopy(self.PRIOR)
         self.step_reward = []
         return states
 
-    def initial_data(self,bodies = None,init_mouse = None):
+    def initial_data(self, bodies=None, init_mouse=None):
         local_data = {}
         if(bodies==None):
             for i in range(0,len(self.bodies)):
@@ -187,7 +192,7 @@ class physic_env():
         return local_data
 
     def update_data(self,true_data,control_vec, include_mouse_info=False):
-        for obj in ['o1', 'o2', 'o3', 'o4']:
+        for obj in self.bodies_names:
             self.data[obj]['x'] += true_data[obj]['x']
             self.data[obj]['y'] += true_data[obj]['y']
             self.data[obj]['vx'] += true_data[obj]['vx']
@@ -270,8 +275,7 @@ class physic_env():
 
     def update_bodies(self, cond):
 
-        for i in range(0, len(cond['sls'])):
-            objname = 'o' + str(i + 1)
+        for i, objname in enumerate(self.bodies_names):
             self.bodies[i].position = (cond['sls'][i]['x'], cond['sls'][i]['y'])
             self.bodies[i].linearDamping = 0.05
             self.bodies[i].linearVelocity = vec2(cond['svs'][i]['x'], cond['svs'][i]['y'])
@@ -349,6 +353,7 @@ class physic_env():
                                                       self.data['co'][-1])
         obj = self.get_object_under_control(mouse_x, mouse_y, click, self.data['co'][-1])
         info["control"] = obj
+        info["mouse_pos"] = (mouse_x, mouse_y)
 
         control_vec = {'obj': np.array([obj]), 'x': np.array([mouse_x]), 'y': np.array([mouse_y]),
                        'vx': np.array([mouse_vx]), 'vy': np.array([mouse_vy]), 
@@ -361,7 +366,8 @@ class physic_env():
                      include_mouse_info=True)}
 
         self.update_data(true_data[true_key], control_vec, include_mouse_info=True)
-        true_trace, states = generate_trajectory(true_data, True, include_mouse_info=True)
+        true_trace, states = generate_trajectory(true_data, True, include_mouse_info=True,
+                                                 bodies_names=self.bodies_names)
         current_time = len(self.data['o1']['x']) - 1
 
         if current_time >= self.cond['timeout']:

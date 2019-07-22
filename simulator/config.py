@@ -70,8 +70,8 @@ def generate_cond(configurations, timeout=TIMEOUT):
     for mass_configuration, force_configuration in configurations:
         X = 5.1*np.random.rand(4) + BALL_RADIUS + BORDER
         Y = 3.1*np.random.rand(4) + BALL_RADIUS + BORDER
-        VX = np.random.uniform(-10, 10, 4)
-        VY = np.random.uniform(-10, 10, 4)
+        VX = np.random.uniform(-2.5, 2.5, 4)
+        VY = np.random.uniform(-2.5, 2.5, 4)
 
         cond_list.append({'sls':[{'x':X[0], 'y':Y[0]}, {'x':X[1], 'y':Y[1]}, {'x':X[2], 'y':Y[2]}, {'x':X[3], 'y':Y[3]}],
         'svs':[{'x':VX[0], 'y':VY[0]}, {'x':VX[1], 'y':VY[1]}, {'x':VX[2], 'y':VY[2]}, {'x':VX[3], 'y':VY[3]}],

@@ -7,10 +7,10 @@ import moviepy.editor as mpy
 
 from .dataset import read_dataset
 
-def make_frame_curried(this_data):
+def make_frame_curried(this_data, n_bodies=4):
     def make_frame(t):
         labels = ['A', 'B', '', '']
-        centers = np.array(['o1','o2','o3','o4'])
+        centers = np.array(['o1','o2','o3','o4'][:n_bodies])
         colors = [(1,0,0),(0,1,0),(0,0,1),(0,0,1)]
         RATIO = 100
         RAD = 25
