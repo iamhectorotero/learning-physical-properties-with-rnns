@@ -29,16 +29,16 @@ def update_velocity(vx, vy, action):
         vy /= velocity_decrease
     elif action == ACCELERATE_IN_X:
         vx += velocity_increment
-        vy /= velocity_decrease
+        #vy /= velocity_decrease
     elif action == ACCELERATE_IN_Y:
         vy += velocity_increment
-        vx /= velocity_decrease
+        # vx /= velocity_decrease
     elif action == DECELERATE_IN_X:
         vx -= velocity_increment
-        vy /= velocity_decrease
+        # vy /= velocity_decrease
     elif action == DECELERATE_IN_Y:
         vy -= velocity_increment
-        vx /= velocity_decrease
+        # vx /= velocity_decrease
     return vx, vy
 
 def update_position(pos, vel, max_pos, min_pos):

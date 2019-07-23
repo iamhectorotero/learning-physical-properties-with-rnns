@@ -89,7 +89,7 @@ def no_answers_e_greedy_action(state, valueNetwork, epsilon, t, target_network=N
     return np.random.choice(possibleActions, p=policy)
 
 
-def exponential_decay(episodeNumber, k=-0.001):
+def exponential_decay(episodeNumber, k=-0.0001):
     return np.exp(k * episodeNumber)
 
 
@@ -379,7 +379,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
 
     answers = []
     ground_truth = []
-    for episodeNumber in range(len(val_cond) - 1):
+    for episodeNumber in range(len(val_cond)):
         done = False
         object_in_control = 0
         is_answer_correct = False
