@@ -89,7 +89,7 @@ def no_answers_e_greedy_action(state, valueNetwork, epsilon, t, target_network=N
     return np.random.choice(possibleActions, p=policy)
 
 
-def exponential_decay(episodeNumber, k=-0.0001):
+def exponential_decay(episodeNumber, k=-0.0002):
     return np.exp(k * episodeNumber)
 
 
@@ -109,7 +109,7 @@ def store_transition(episode, state, action, reward, new_state, done, v_hh, t_hh
             episode[i].append(element)
 
 
-def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), idx=0, lock=None, experience_replay=(), agent_answers=(), n_bodies=4):
+def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), idx=0, lock=None, experience_replay=(), agent_answers=(), n_bodies=4, training_data={}):
 
     np.random.seed(idx)
     for cond in train_cond:
@@ -187,6 +187,10 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         valueNetwork.reset_hidden_states()
         loss = learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer)
 
+        training_data["loss"].append(float(loss.cpu().numpy()))
+        training_data["control"].append(info["control"])
+        training_data["episode_length"].append(frame)
+
         if len(experience_replay) >= 2 * SAMPLE_N_EPISODES:
             experience_replay.pop(0)
 
@@ -208,7 +212,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         pbar.set_description(desc)
 
     pbar.close()
-    return experience_replay, agent_answers
+    return experience_replay, agent_answers, training_data
 
 def SSE(outputs, targets):
     weights = torch.ones(len(outputs[0])).cuda()

@@ -6,6 +6,7 @@ import argparse
 import numpy as np
 import torch.optim as optim
 from torch import multiprocessing as mp
+import pandas as pd
 
 from SharedAdam import SharedAdam
 from models import ValueNetwork, NonRecurrentValueNetwork, Policy
@@ -45,7 +46,7 @@ if __name__ == "__main__" :
     value_network = ValueNetwork(**net_params).cuda()
     target_value_network = None
     # optimizer = SharedAdam(value_network.parameters(), lr=1e-3)
-    optimizer = optim.Adam(value_network.parameters(), lr=1e-3)
+    optimizer = optim.Adam(value_network.parameters(), lr=5e-4)
 
     # value_network.share_memory()
     # target_value_network.share_memory()
@@ -71,7 +72,7 @@ if __name__ == "__main__" :
     TOTAL_STEPS = int(32e6)
     N_WORLDS = 50000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 200
+    episodes_per_agent = 10
     val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
@@ -89,6 +90,8 @@ if __name__ == "__main__" :
     i = 0
     experience_replay = ()
     agent_answers = ()
+    training_data = {"loss":[], "control": [], "episode_length": []}
+
     n_bodies = 1
     while True:
         agent_cond = train_cond[:episodes_per_agent]
@@ -99,8 +102,11 @@ if __name__ == "__main__" :
         trainingArgs = (value_network, target_value_network, optimizer, counter,
                        episodes_per_agent, discountFactor, startingEpisode,
                        mass_answers, force_answers, agent_cond, 0, lock,
-                       experience_replay, agent_answers, n_bodies)
-        experience_replay, agent_answers = train(*trainingArgs)
+                       experience_replay, agent_answers, n_bodies, training_data)
+        experience_replay, agent_answers, training_data = train(*trainingArgs)
+
+        df = pd.DataFrame.from_dict(training_data)
+        df.to_hdf("training_data.h5", key="training_data")
 
         agent_cond = val_cond[:val_episodes_per_agent]
         val_cond = val_cond[val_episodes_per_agent:]
@@ -111,4 +117,5 @@ if __name__ == "__main__" :
 
         if len(train_cond) == 0:
             break
+
 
