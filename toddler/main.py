@@ -41,7 +41,7 @@ if __name__ == "__main__" :
     lock = mp.Lock()
 
     torch.backends.cudnn.benchmark = False
-    net_params = {"input_dim":12, "hidden_dim":40, "n_layers":4, "output_dim":6, "dropout":0.0}
+    net_params = {"input_dim":10, "hidden_dim":40, "n_layers":4, "output_dim":6, "dropout":0.0}
     # policy_network = Policy(**net_params)
     value_network = ValueNetwork(**net_params).cuda()
     target_value_network = None
@@ -70,9 +70,9 @@ if __name__ == "__main__" :
                                                  stratify=every_world_answer[not_train_indices])
 
     TOTAL_STEPS = int(32e6)
-    N_WORLDS = 50000
+    N_WORLDS = 30000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 10
+    episodes_per_agent = 1000
     val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)

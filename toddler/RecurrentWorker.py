@@ -93,10 +93,15 @@ def exponential_decay(episodeNumber, k=-0.0002):
     return np.exp(k * episodeNumber)
 
 
+def remove_features_by_idx(state, to_remove_features=()):
+        remain_features = [feature_i for feature_i in range(state.shape[-1]) if feature_i not in to_remove_features]
+        state = state[:, :, remain_features]
+        return state
+
+
 def to_state_representation(state, frame=None, answer=None):
 
     if answer is not None:
-        # state = answer.astype(np.float32)
         state = np.hstack((state, answer.astype(np.float32)))
     elif frame is not None:
         state = np.hstack((state, np.array(frame).astype(np.float32) / TIMEOUT))
@@ -144,6 +149,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
         answer = get_answer()
         answer = np.array(classes) == answer
         state = to_state_representation(state, frame=frame)
+        state = remove_features_by_idx(state, [2, 3])
 
         episode = [[], [], [], [], [], [], []]
         loss = 0
@@ -165,6 +171,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
 
             new_state, reward, done, info = env.step_active(action, get_mouse_action, question_type)
             new_state = to_state_representation(new_state, frame=frame)
+            new_state = remove_features_by_idx(new_state, [2, 3])
 
             if info["control"] == 1:
                 reward = 1 - float(frame) / TIMEOUT
@@ -396,6 +403,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
         answer = get_answer()
         answer = np.array(classes) == answer
         state = to_state_representation(state, frame=frame)
+        state = remove_features_by_idx(state, [2, 3])
 
         actions = [0]
         action_repeat = 0
@@ -413,6 +421,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
 
             new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
             new_state = to_state_representation(new_state, frame=frame)
+            new_state = remove_features_by_idx(new_state, [2, 3])
 
             if info["control"]  == 1 and not object_A_in_control:
                 reward += 1
