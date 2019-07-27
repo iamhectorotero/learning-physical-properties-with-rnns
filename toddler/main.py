@@ -36,21 +36,10 @@ if __name__ == "__main__" :
         mass_answers = {}
         force_answers = force_answers
 
-    # mp.set_start_method('spawn')
-    counter = mp.Value('i', 0)
-    lock = mp.Lock()
-
     torch.backends.cudnn.benchmark = False
     net_params = {"input_dim":10, "hidden_dim":40, "n_layers":4, "output_dim":6, "dropout":0.0}
-    # policy_network = Policy(**net_params)
     value_network = ValueNetwork(**net_params).cuda()
-    target_value_network = None
-    # optimizer = SharedAdam(value_network.parameters(), lr=1e-3)
     optimizer = optim.Adam(value_network.parameters(), lr=5e-4)
-
-    # value_network.share_memory()
-    # target_value_network.share_memory()
-    # optimizer.share_memory()
 
     discountFactor = 0.99
 
@@ -72,7 +61,7 @@ if __name__ == "__main__" :
     TOTAL_STEPS = int(32e6)
     N_WORLDS = 30000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 1000
+    episodes_per_agent = 10
     val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
@@ -99,10 +88,9 @@ if __name__ == "__main__" :
 
         startingEpisode = i * episodes_per_agent
 
-        trainingArgs = (value_network, target_value_network, optimizer, counter,
-                       episodes_per_agent, discountFactor, startingEpisode,
-                       mass_answers, force_answers, agent_cond, 0, lock,
-                       experience_replay, agent_answers, n_bodies, training_data)
+        trainingArgs = (value_network, optimizer, episodes_per_agent, discountFactor,
+                        startingEpisode, mass_answers, force_answers, agent_cond,
+                        experience_replay, agent_answers, n_bodies, training_data)
         experience_replay, agent_answers, training_data = train(*trainingArgs)
 
         df = pd.DataFrame.from_dict(training_data)

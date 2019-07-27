@@ -57,11 +57,7 @@ def e_greedy_action(state, valueNetwork, epsilon, t, target_network=None):
     return np.random.choice(possibleActions, p=policy)
 
 
-def no_answers_e_greedy_action(state, valueNetwork, epsilon, t, target_network=None,
-                               current_pos=(None, None)):
-    if target_network is not None:
-        target_network(state.cuda())
-
+def no_answers_e_greedy_action(state, valueNetwork, epsilon, t, current_pos=(None, None)):
     possibleActions = np.arange(0, 6)
     action_values = valueNetwork(state.cuda())[0][0]
     greedy_action = torch.argmax(action_values).item()
@@ -114,9 +110,9 @@ def store_transition(episode, state, action, reward, new_state, done, v_hh, t_hh
             episode[i].append(element)
 
 
-def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), idx=0, lock=None, experience_replay=(), agent_answers=(), n_bodies=4, training_data={}):
+def train(valueNetwork, optimizer, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), experience_replay=(), agent_answers=(), n_bodies=4, training_data={}):
 
-    np.random.seed(idx)
+    np.random.seed(42)
     for cond in train_cond:
         cond['timeout'] = TIMEOUT
 
@@ -135,13 +131,12 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
 
     agent_answers = list(agent_answers)
     experience_replay = list(experience_replay)
-    epsilon = exponential_decay(counter.value)
     total_reward = 0
     SAMPLE_N_EPISODES = 32
 
     pbar = tqdm(initial=startingEpisode, total=startingEpisode + numEpisodes)
     for episodeNumber in range(startingEpisode, startingEpisode + numEpisodes):
-        epsilon = exponential_decay(counter.value)
+        epsilon = exponential_decay(episodeNumber)
         done = False
         frame = 0
 
@@ -165,7 +160,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
             else:
                 zeros = torch.zeros(4, 1, 40).cuda()
                 value_network_hh = valueNetwork.hh if valueNetwork.hh is not None else zeros
-                action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, None, 
+                action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame,
                                                     info["mouse_pos"])
                 action_repeat = ACTION_REPEAT
 
@@ -192,7 +187,7 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
                                                       replace=False)
         sampled_experience = [experience_replay[i] for i in sampled_experience_indices]
         valueNetwork.reset_hidden_states()
-        loss = learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer)
+        loss = learn(valueNetwork, sampled_experience, discountFactor, optimizer)
 
         training_data["loss"].append(float(loss.cpu().numpy()))
         training_data["control"].append(info["control"])
@@ -203,14 +198,9 @@ def train(valueNetwork, target_network, optimizer, counter, numEpisodes, discoun
 
         valueNetwork.reset_hidden_states()
 
-        with lock:
-            counter.value += 1
-            """if counter.value % I_TARGET == 0:
-                print("Updating Target Network")
-                target_network.load_state_dict(valueNetwork.state_dict())"""
-            if counter.value % CHECKPOINT == 0:
-                print("Checkpointing ValueNetwork")
-                saveModelNetwork(valueNetwork, str(counter.value)+"_model")
+        if episodeNumber % CHECKPOINT == 0:
+            print("Checkpointing ValueNetwork")
+            saveModelNetwork(valueNetwork, str(episodeNumber)+"_model")
 
         agent_answers = [0]
         upper_bound = (1 - epsilon) + epsilon / 3
@@ -248,7 +238,7 @@ def SSE(outputs, targets):
     loss.backward()
 """
 
-def learn(valueNetwork, target_network, sampled_experience, discountFactor, optimizer,
+def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
           seq_length=80, learn_from_sequence_end=True):
 
     acc_loss = 0
@@ -259,7 +249,6 @@ def learn(valueNetwork, target_network, sampled_experience, discountFactor, opti
     batch_new_states = []
     batch_dones = []
     batch_value_hidden_states = []
-    # batch_target_hidden_states = []
 
     episode_length = [len(states) for states, _, _, _, _, _, _ in sampled_experience]
     min_episode_length = min(episode_length)
@@ -313,7 +302,7 @@ def learn(valueNetwork, target_network, sampled_experience, discountFactor, opti
 
     return loss.data
 
-def learn_example_by_example(valueNetwork, target_network, sampled_experience, discountFactor, optimizer,
+def learn_example_by_example(valueNetwork, sampled_experience, discountFactor, optimizer,
                              seq_length=80, learn_from_sequence_end=True):
 
     acc_loss = 0
@@ -416,7 +405,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
                     greedy_action = NO_OP 
                 action_repeat -= 1
             else:
-                greedy_action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, None,                                                           info["mouse_pos"])
+                greedy_action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, info["mouse_pos"])
                 action_repeat = ACTION_REPEAT
 
             new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
