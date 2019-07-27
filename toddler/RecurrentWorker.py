@@ -22,7 +22,7 @@ from action_coding import CLICK, NO_OP, ACCELERATE_IN_X, ACCELERATE_IN_Y, DECELE
 ACTION_REPEAT = 1
 CHECKPOINT = 1000
 MOUSE_EXPLORATION_FRAMES = 2
-TIMEOUT = 1800
+TIMEOUT = 600
 I_TARGET = 35 # Every 10 episodes update target network
 
 def init_mouse():

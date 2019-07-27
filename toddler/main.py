@@ -41,7 +41,7 @@ if __name__ == "__main__" :
     value_network = ValueNetwork(**net_params).cuda()
     optimizer = optim.Adam(value_network.parameters(), lr=5e-4)
 
-    discountFactor = 0.99
+    discountFactor = 0.95
 
     every_conf = generate_every_world_configuration()
     every_world_answer = np.array(list(map(get_configuration_answer, every_conf)))
@@ -61,7 +61,7 @@ if __name__ == "__main__" :
     TOTAL_STEPS = int(32e6)
     N_WORLDS = 30000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 10
+    episodes_per_agent = 1000
     val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
