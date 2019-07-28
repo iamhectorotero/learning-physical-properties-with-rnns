@@ -7,7 +7,7 @@ from tqdm import tqdm
 import ipdb
 
 import pandas as pd
-from models import ValueNetwork
+from .models import ValueNetwork
 from torch.autograd import Variable
 import random
 from copy import deepcopy
@@ -15,15 +15,14 @@ import numpy as np
 
 from tqdm import tqdm, trange
 from simulator.environment import physic_env
-from action_coding import get_mouse_action, mass_answers_idx, force_answers_idx
-from action_coding import MIN_X, MAX_X, MIN_Y, MAX_Y
-from action_coding import CLICK, NO_OP, ACCELERATE_IN_X, ACCELERATE_IN_Y, DECELERATE_IN_X, DECELERATE_IN_Y
+from .action_coding import get_mouse_action, mass_answers_idx, force_answers_idx
+from .action_coding import MIN_X, MAX_X, MIN_Y, MAX_Y
+from .action_coding import CLICK, NO_OP, ACCELERATE_IN_X, ACCELERATE_IN_Y, DECELERATE_IN_X, DECELERATE_IN_Y
 
 ACTION_REPEAT = 1
 CHECKPOINT = 1000
 MOUSE_EXPLORATION_FRAMES = 2
 TIMEOUT = 600
-I_TARGET = 35 # Every 10 episodes update target network
 
 def init_mouse():
     x = MAX_X * np.random.rand() + MIN_X
@@ -351,98 +350,3 @@ def saveModelNetwork(model, strDirectory):
     torch.save(model.state_dict(), strDirectory)
 
 
-def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bodies=4):
-    print("----------------------------VALIDATION START-----------------------------------------")
-
-    for cond in val_cond:
-        cond['timeout'] = TIMEOUT
-
-
-    if len(mass_answers) > 0:
-        env = physic_env(val_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
-                         reward_stop=None, mass_answers=mass_answers, n_bodies=n_bodies)
-        question_type = 'mass'
-        get_answer = env.get_mass_true_answer
-        classes = ["A is heavier", "B is heavier", "same"]
-    else:
-        env = physic_env(val_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
-                         reward_stop=None, force_answers=force_answers, n_bodies=n_bodies)
-        question_type = 'force'
-        get_answer = env.get_force_true_answer
-        classes = ["attract", "repel", "none"]
-
-    if os.path.exists("replays.h5"):
-        os.remove("replays.h5")
-
-    epsilon = 0.01
-    correct_answers = 0
-
-    answers = []
-    ground_truth = []
-    for episodeNumber in range(len(val_cond)):
-        done = False
-        object_in_control = 0
-        is_answer_correct = False
-
-        object_A_in_control = False
-        object_B_in_control = False
-        frame = 0
-
-        state = env.reset(True, init_mouse())
-        answer = get_answer()
-        answer = np.array(classes) == answer
-        state = to_state_representation(state, frame=frame)
-        state = remove_features_by_idx(state, [2, 3])
-
-        actions = [0]
-        action_repeat = 0
-        info = {"mouse_pos": (None, None)}
-        while not done:
-            frame += 1
-
-            if action_repeat > 0:
-                if greedy_action == CLICK:
-                    greedy_action = NO_OP 
-                action_repeat -= 1
-            else:
-                greedy_action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, info["mouse_pos"])
-                action_repeat = ACTION_REPEAT
-
-            new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
-            new_state = to_state_representation(new_state, frame=frame)
-            new_state = remove_features_by_idx(new_state, [2, 3])
-
-            if info["control"]  == 1 and not object_A_in_control:
-                reward += 1
-                object_in_control += 1.
-                object_A_in_control = True
-                done = True
-            elif info["control"]  == 2 and not object_B_in_control:
-                reward += 0.
-                object_in_control += 0.5
-                object_B_in_control = True
-
-            state = new_state
-            actions.append(greedy_action)
-
-        valueNetwork.reset_hidden_states()
-
-        data = env.step_data()
-        trial_data = pd.DataFrame()
-
-        for object_id in ["o1", "o2", "o3", "o4"][:n_bodies]:
-            for attr in ["x", "y", "vx", "vy"]:
-                trial_data[object_id+"."+attr] = data[object_id][attr]
-
-        trial_data["ground_truth"] = get_answer()
-        trial_data["actions"] = actions
-        trial_data["mouseX"] = data["mouse"]["x"]
-        trial_data["mouseY"] = data["mouse"]["y"]
-        trial_data["mouse.vx"] = data["mouse"]["vx"]
-        trial_data["mouse.vy"] = data["mouse"]["vy"]
-        trial_data["idControlledObject"] = ["none" if obj == 0 else "object"+str(obj) for obj in data["co"]]
-        trial_data.to_hdf("replays.h5", key="episode_"+str(episodeNumber))
-
-        print(episodeNumber, "Correct?", is_answer_correct, "Control", object_in_control, "done @", frame)
-    print("Correct perc", correct_answers / 10)
-    print("----------------------------VALIDATION END-----------------------------------------")

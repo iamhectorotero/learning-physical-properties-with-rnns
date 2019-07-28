@@ -8,13 +8,12 @@ import torch.optim as optim
 from torch import multiprocessing as mp
 import pandas as pd
 
-from SharedAdam import SharedAdam
-from models import ValueNetwork, NonRecurrentValueNetwork, Policy
-from RecurrentWorker import train, validate, saveModelNetwork
-from PolicyGradients import train_pg, validate_pg
+from toddler.models import ValueNetwork, NonRecurrentValueNetwork, Policy
+from toddler.RecurrentWorker import train, saveModelNetwork
+from toddler.validate import validate
 
 import os
-from action_coding import mass_answers, force_answers
+from toddler.action_coding import mass_answers, force_answers
 from simulator.config import generate_every_world_configuration
 from generate_passive_simulations import get_configuration_answer
 from simulator.config import generate_cond
@@ -59,9 +58,9 @@ if __name__ == "__main__" :
                                                  stratify=every_world_answer[not_train_indices])
 
     TOTAL_STEPS = int(32e6)
-    N_WORLDS = 30000
+    N_WORLDS = 50000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 1000
+    episodes_per_agent = 10
     val_episodes_per_agent = 10
 
     VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
@@ -82,6 +81,8 @@ if __name__ == "__main__" :
     training_data = {"loss":[], "control": [], "episode_length": []}
 
     n_bodies = 1
+    action_repeat = 1
+
     while True:
         agent_cond = train_cond[:episodes_per_agent]
         train_cond = train_cond[episodes_per_agent:]
@@ -98,7 +99,8 @@ if __name__ == "__main__" :
 
         agent_cond = val_cond[:val_episodes_per_agent]
         val_cond = val_cond[val_episodes_per_agent:]
-        valArgs = (value_network, mass_answers, force_answers, agent_cond, n_bodies)
+        valArgs = (value_network, mass_answers, force_answers, agent_cond, n_bodies, action_repeat,
+                   "replays.h5")
         validate(*valArgs)
 
         i += 1

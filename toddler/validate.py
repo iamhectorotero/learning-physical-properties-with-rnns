@@ -1,66 +1,101 @@
-#!/usr/bin/env python3
-# encoding utf-8
-
-from copy import deepcopy
-import argparse
-import numpy as np
-from torch import multiprocessing as mp
-import torch
-
-from SharedAdam import SharedAdam
-from models import ValueNetwork
-from Worker import train, validate, saveModelNetwork
-
 import os
-from action_coding import mass_answers, force_answers
-from simulator.config import generate_every_world_configuration
-from generate_passive_simulations import get_configuration_answer
-from sklearn.model_selection import train_test_split
+import numpy as np
+import pandas as pd
+
+from simulator.environment import physic_env
+from .RecurrentWorker import no_answers_e_greedy_action, to_state_representation, remove_features_by_idx, init_mouse
+from .action_coding import get_mouse_action, CLICK, NO_OP
 
 
-if __name__ == "__main__" :
+def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bodies=4, action_repeat=1, path="replays.h5", print_stats=True):
+    if print_stats:
+        print("----------------------------VALIDATION START-----------------------------------------")
+    action_repeat_default = action_repeat
 
-    parser = argparse.ArgumentParser()
-    # parser.add_argument('--num_processes', type=int, default=12)
-    parser.add_argument('--question_type', type=str)
-    parser.add_argument('--model_path', type=str, default="500000_model")
+    for cond in val_cond:
+        cond['timeout'] = 1800
 
-    args=parser.parse_args()
-    if args.question_type == "mass":
-        mass_answers = mass_answers
-        force_answers = {}
+    if len(mass_answers) > 0:
+        env = physic_env(val_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
+                         reward_stop=None, mass_answers=mass_answers, n_bodies=n_bodies)
+        question_type = 'mass'
+        get_answer = env.get_mass_true_answer
+        classes = ["A is heavier", "B is heavier", "same"]
     else:
-        mass_answers = {}
-        force_answers = force_answers
+        env = physic_env(val_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
+                         reward_stop=None, force_answers=force_answers, n_bodies=n_bodies)
+        question_type = 'force'
+        get_answer = env.get_force_true_answer
+        classes = ["attract", "repel", "none"]
 
-    net_params = {"input_dim":26, "hidden_dim":25, "n_layers":4, "output_dim":9, "dropout":0.5}
-    value_network = ValueNetwork(**net_params)
-    value_network.load_state_dict(torch.load(args.model_path))
-    value_network.eval()
+    if os.path.exists("replays.h5"):
+        os.remove("replays.h5")
 
-    every_conf = generate_every_world_configuration()
-    every_world_answer = np.array(list(map(get_configuration_answer, every_conf)))
-    n_configurations = len(every_conf)
+    epsilon = 0.00
+    total_reward = 0
+    trials = []
 
-    train_size = 0.7
-    val_size = 0.15
-    test_size = 0.15
+    for episodeNumber in range(len(val_cond)):
+        done = False
+        reward = 0
+        frame = 0
 
-    all_indices = np.arange(n_configurations)
-    train_indices, not_train_indices = train_test_split(all_indices, train_size=train_size,
-                                                        random_state=0, stratify=every_world_answer)
-    val_indices, test_indices = train_test_split(not_train_indices, train_size=0.5,                
-                                                 random_state=0,
-                                                 stratify=every_world_answer[not_train_indices])
+        state = env.reset(True, init_mouse())
+        state = to_state_representation(state, frame=frame)
+        state = remove_features_by_idx(state, [2, 3])
 
-    episodes_per_agent = 100
-    print("episodes_per_agent", episodes_per_agent)
+        actions = [0]
+        action_repeat = 0
+        info = {"mouse_pos": (None, None)}
+        while not done:
+            frame += 1
 
-    startingEpisode = 0
-    idx = 0
-    valArgs = (idx, value_network, episodes_per_agent, mass_answers, 
-              force_answers, every_conf, val_indices)
-    p = mp.Process(target=validate, args=valArgs)
-    p.start()
-    p.join()
+            if action_repeat > 0:
+                if greedy_action == CLICK:
+                    greedy_action = NO_OP 
+                action_repeat -= 1
+            else:
+                greedy_action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, info["mouse_pos"])
+                action_repeat = action_repeat_default
 
+            new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
+            new_state = to_state_representation(new_state, frame=frame)
+            new_state = remove_features_by_idx(new_state, [2, 3])
+
+            if info["control"]  == 1:
+                reward = 1
+                total_reward += 1
+                done = True
+
+            state = new_state
+            actions.append(greedy_action)
+
+        valueNetwork.reset_hidden_states()
+
+        data = env.step_data()
+        trial_data = pd.DataFrame()
+
+        for object_id in ["o1", "o2", "o3", "o4"][:n_bodies]:
+            for attr in ["x", "y", "vx", "vy"]:
+                trial_data[object_id+"."+attr] = data[object_id][attr]
+
+        trial_data["actions"] = actions
+        trial_data["mouseX"] = data["mouse"]["x"]
+        trial_data["mouseY"] = data["mouse"]["y"]
+        trial_data["mouse.vx"] = data["mouse"]["vx"]
+        trial_data["mouse.vy"] = data["mouse"]["vy"]
+        trial_data["idControlledObject"] = ["none" if obj == 0 else "object"+str(obj) for obj in data["co"]]
+        trials.append(trial_data)
+
+        if print_stats:
+            print(episodeNumber+1, "Control?", reward == 1, "done @", frame)
+    accuracy = total_reward / len(val_cond)
+    if print_stats:
+        print("Success in", accuracy*100, "%")
+        print("----------------------------VALIDATION END-----------------------------------------")
+
+    if path is not None:
+        for i, trial_data in enumerate(trials):
+            trial_data.to_hdf(path, key="episode_"+str(i))
+
+    return accuracy, trials
