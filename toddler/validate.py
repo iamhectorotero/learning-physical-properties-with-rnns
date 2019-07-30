@@ -12,8 +12,9 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
         print("----------------------------VALIDATION START-----------------------------------------")
     action_repeat_default = action_repeat
 
+    timeout = 1800
     for cond in val_cond:
-        cond['timeout'] = 1800
+        cond['timeout'] = timeout
 
     if len(mass_answers) > 0:
         env = physic_env(val_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
@@ -41,7 +42,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
         frame = 0
 
         state = env.reset(True, init_mouse())
-        state = to_state_representation(state, frame=frame)
+        state = to_state_representation(state, frame=frame, timeout=timeout)
         state = remove_features_by_idx(state, [2, 3])
 
         actions = [0]
@@ -59,7 +60,7 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
                 action_repeat = action_repeat_default
 
             new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
-            new_state = to_state_representation(new_state, frame=frame)
+            new_state = to_state_representation(new_state, frame=frame, timeout=timeout)
             new_state = remove_features_by_idx(new_state, [2, 3])
 
             if info["control"]  == 1:

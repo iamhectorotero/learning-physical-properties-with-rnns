@@ -84,7 +84,7 @@ def no_answers_e_greedy_action(state, valueNetwork, epsilon, t, current_pos=(Non
     return np.random.choice(possibleActions, p=policy)
 
 
-def exponential_decay(episodeNumber, k=-0.0002):
+def exponential_decay(episodeNumber, k=-0.0001):
     return np.exp(k * episodeNumber)
 
 
@@ -94,12 +94,12 @@ def remove_features_by_idx(state, to_remove_features=()):
         return state
 
 
-def to_state_representation(state, frame=None, answer=None):
+def to_state_representation(state, frame=None, answer=None, timeout=TIMEOUT):
 
     if answer is not None:
         state = np.hstack((state, answer.astype(np.float32)))
     elif frame is not None:
-        state = np.hstack((state, np.array(frame).astype(np.float32) / TIMEOUT))
+        state = np.hstack((state, np.array(frame).astype(np.float32) / timeout))
     state = state.reshape(1, 1, -1)
     return torch.from_numpy(state).float()
 
@@ -109,11 +109,13 @@ def store_transition(episode, state, action, reward, new_state, done, v_hh, t_hh
             episode[i].append(element)
 
 
-def train(valueNetwork, optimizer, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), experience_replay=(), agent_answers=(), n_bodies=4, training_data={}):
+def train(valueNetwork, optimizer, numEpisodes, discountFactor, startingEpisode=0, mass_answers={}, force_answers={}, train_cond=(), experience_replay=(), agent_answers=(), n_bodies=4, training_data={}, starting_puck_speed=10.):
 
     np.random.seed(42)
     for cond in train_cond:
         cond['timeout'] = TIMEOUT
+        # vs = np.random.uniform(-starting_puck_speed, starting_puck_speed, (n_bodies, 2))
+        # cond['svs'] = [{"x": vs[i][0], "y": vs[i][1]} for i in range(n_bodies)]
 
     if len(mass_answers) > 0:
         env = physic_env(train_cond, None, None, (3., 2.), 1, ig_mode=0, prior=None,
@@ -210,35 +212,9 @@ def train(valueNetwork, optimizer, numEpisodes, discountFactor, startingEpisode=
     pbar.close()
     return experience_replay, agent_answers, training_data
 
-def SSE(outputs, targets):
-    weights = torch.ones(len(outputs[0])).cuda()
-    weights[-1] = 10
-    return torch.sum(weights * (outputs - targets)**2)
-
-
-"""def learn_async(idx, states, actions, rewards, new_states, dones, discountFactor, valueNetwork, target_network):
-    new_states = torch.cat(new_states, dim=1)
-    states = torch.cat(states, dim=1)
-    dones = torch.tensor(dones)
-    # learn from full returns
-    step_return = 0
-    returns = []
-    for i in range(len(rewards)-1, -1, -1):
-        step_return = rewards[i] + discountFactor * step_return
-        returns.append(step_return)
-    returns.reverse()
-    targets = torch.tensor(returns)
-
-    outputs = valueNetwork(states, idx)[:, np.arange(len(states[0])), actions]
-    error = nn.MSELoss()
-    loss = error(targets, outputs)
-    if idx == 0:
-        print(loss.data)
-    loss.backward()
-"""
 
 def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
-          seq_length=80, learn_from_sequence_end=True):
+          seq_length=600, learn_from_sequence_end=True):
 
     acc_loss = 0
     loss = 0
@@ -280,6 +256,9 @@ def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
         returns.reverse()
         batch_returns.append(returns[starting_idx:end_idx])
 
+    if len(batch_actions) == 0:
+        return 0.
+
     actions = torch.tensor(batch_actions)
     states = torch.cat(batch_states, dim=0).cuda()
     new_states = torch.cat(batch_new_states, dim=0).cuda()
@@ -300,6 +279,7 @@ def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
     optimizer.zero_grad()
 
     return loss.data
+
 
 def learn_example_by_example(valueNetwork, sampled_experience, discountFactor, optimizer,
                              seq_length=80, learn_from_sequence_end=True):

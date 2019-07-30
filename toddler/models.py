@@ -6,19 +6,39 @@ import torch
 class ValueNetwork(nn.Module):
     def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0.0):
         super(ValueNetwork, self).__init__()
-        self.project = nn.Linear(input_dim, input_dim)
+        # self.project = nn.Linear(input_dim, input_dim)
+        # self.relu = nn.ReLU()
         self.rec_layer = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.readout = nn.Linear(hidden_dim, output_dim)
         self.hh = None
 
     def forward(self, x):
-        x = self.project(x)
+        # x = self.relu(self.project(x))
         out, self.hh = self.rec_layer(x, self.hh)
         out = self.readout(out)
         return out
 
     def reset_hidden_states(self, hh=None):
         self.hh = hh
+
+
+class DistributedValueNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0.0, n_processes=10):
+        super(DistributedValueNetwork, self).__init__()
+        self.project = nn.Linear(input_dim, input_dim)
+        self.rec_layer = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.readout = nn.Linear(hidden_dim, output_dim)
+        self.hh = [None for _ in range(n_processes)]
+
+    def forward(self, x, process_i):
+        x = self.project(x)
+        out, self.hh[process_i] = self.rec_layer(x, self.hh)
+        out = self.readout(out)
+        return out
+
+    def reset_hidden_states(self, hh=None):
+        self.hh[process_i] = hh[process_i]
+
 
 class Policy(nn.Module):
     def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0., n_processes=1):

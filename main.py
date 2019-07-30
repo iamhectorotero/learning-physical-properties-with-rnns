@@ -60,10 +60,11 @@ if __name__ == "__main__" :
     TOTAL_STEPS = int(32e6)
     N_WORLDS = 50000
     worlds_per_agent = N_WORLDS // args.num_processes
-    episodes_per_agent = 10
+    episodes_per_agent = 1000
     val_episodes_per_agent = 10
 
-    VALIDATION_EPISODES = val_episodes_per_agent *(N_WORLDS // 250)
+    n_iterations = N_WORLDS // episodes_per_agent + 1
+    VALIDATION_EPISODES = val_episodes_per_agent*n_iterations
     print("episodes_per_agent", episodes_per_agent)
     i = 0
 
@@ -75,15 +76,17 @@ if __name__ == "__main__" :
     repeated_val_indices = np.random.choice(val_indices, VALIDATION_EPISODES, replace=True)
     val_cond = generate_cond(every_conf[repeated_val_indices])
 
-    i = 0
     experience_replay = ()
     agent_answers = ()
     training_data = {"loss":[], "control": [], "episode_length": []}
 
     n_bodies = 1
     action_repeat = 1
+    MAX_STARTING_SPEED = 10
+    MIN_STARTING_SPEED = 3
 
-    while True:
+    for i in range(n_iterations):
+        starting_puck_speed = MIN_STARTING_SPEED + (MAX_STARTING_SPEED - MIN_STARTING_SPEED) * i / (n_iterations - 1)
         agent_cond = train_cond[:episodes_per_agent]
         train_cond = train_cond[episodes_per_agent:]
 
@@ -91,7 +94,8 @@ if __name__ == "__main__" :
 
         trainingArgs = (value_network, optimizer, episodes_per_agent, discountFactor,
                         startingEpisode, mass_answers, force_answers, agent_cond,
-                        experience_replay, agent_answers, n_bodies, training_data)
+                        experience_replay, agent_answers, n_bodies, training_data,
+                        starting_puck_speed)
         experience_replay, agent_answers, training_data = train(*trainingArgs)
 
         df = pd.DataFrame.from_dict(training_data)
@@ -102,8 +106,6 @@ if __name__ == "__main__" :
         valArgs = (value_network, mass_answers, force_answers, agent_cond, n_bodies, action_repeat,
                    "replays.h5")
         validate(*valArgs)
-
-        i += 1
 
         if len(train_cond) == 0:
             break
