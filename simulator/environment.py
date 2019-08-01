@@ -31,6 +31,7 @@ class physic_env():
         self.cond = cond[0]
         # self.cond = cond
         self.init_mouse = init_mouse
+        self.n_bodies = n_bodies
         self.bodies_names = []
         self.add_pucks(n_bodies)
         self.add_static_walls()
@@ -336,13 +337,10 @@ class physic_env():
         info = {"correct_answer": False, "incorrect_answer": False, "control": 0}
 
         if action_idx in self.mass_answers or action_idx in self.force_answers:
-            stop_flag = True
             if self.is_answer_correct(action_idx, question_type):
                 info["correct_answer"] = True
-                reward += 10.
             else:
                 info["incorrect_answer"] = True
-                reward -= 10.
 
         click, mouse_x, mouse_y, mouse_vx, mouse_vy = generate_mouse_action(action_idx,
                                                       self.data['mouse']['x'][-1],

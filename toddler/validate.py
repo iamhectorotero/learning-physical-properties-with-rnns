@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from simulator.environment import physic_env
-from .RecurrentWorker import no_answers_e_greedy_action, to_state_representation, remove_features_by_idx, init_mouse
+from .RecurrentWorker import e_greedy_action, no_answers_e_greedy_action, to_state_representation, remove_features_by_idx, init_mouse
 from .action_coding import get_mouse_action, CLICK, NO_OP
 
 
@@ -34,6 +34,8 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
 
     epsilon = 0.00
     total_reward = 0
+    total_control = []
+    agent_answers = []
     trials = []
 
     for episodeNumber in range(len(val_cond)):
@@ -43,8 +45,10 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
 
         state = env.reset(True, init_mouse())
         state = to_state_representation(state, frame=frame, timeout=timeout)
-        state = remove_features_by_idx(state, [2, 3])
+        # state = remove_features_by_idx(state, [2, 3])
 
+        has_controlled_A = False
+        has_controlled_B = False
         actions = [0]
         action_repeat = 0
         info = {"mouse_pos": (None, None)}
@@ -56,17 +60,32 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
                     greedy_action = NO_OP 
                 action_repeat -= 1
             else:
-                greedy_action = no_answers_e_greedy_action(state, valueNetwork, epsilon, frame, info["mouse_pos"])
+                greedy_action = e_greedy_action(state, valueNetwork, epsilon, frame, info["mouse_pos"])
                 action_repeat = action_repeat_default
 
             new_state, reward, done, info = env.step_active(greedy_action, get_mouse_action, question_type)
             new_state = to_state_representation(new_state, frame=frame, timeout=timeout)
-            new_state = remove_features_by_idx(new_state, [2, 3])
+            # new_state = remove_features_by_idx(new_state, [2, 3])
 
-            if info["control"]  == 1:
-                reward = 1
-                total_reward += 1
+            if info["control"] == 1:
+                if not has_controlled_A:
+                    reward = 1 - float(frame) / timeout
+                    has_controlled_A = True
+                if not has_controlled_B:
+                    reward = 1 - float(frame) / timeout
+                    has_controlled_B = True
+
+            if info["correct_answer"]:
+                reward += 1
+                agent_answers.append(1)
                 done = True
+            elif info["incorrect_answer"]:
+                reward -= 1
+                agent_answers.append(0)
+                done = True
+            elif done:
+                agent_answers.append(0)
+                reward = -1
 
             state = new_state
             actions.append(greedy_action)
@@ -80,6 +99,9 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
             for attr in ["x", "y", "vx", "vy"]:
                 trial_data[object_id+"."+attr] = data[object_id][attr]
 
+        this_episode_control = int(has_controlled_A) + int(has_controlled_B)
+        total_control.append(this_episode_control)
+
         trial_data["actions"] = actions
         trial_data["mouseX"] = data["mouse"]["x"]
         trial_data["mouseY"] = data["mouse"]["y"]
@@ -89,14 +111,18 @@ def validate(valueNetwork, mass_answers={}, force_answers={}, val_cond=(), n_bod
         trials.append(trial_data)
 
         if print_stats:
-            print(episodeNumber+1, "Control?", reward == 1, "done @", frame)
-    accuracy = total_reward / len(val_cond)
+            print(episodeNumber+1, "Control?", this_episode_control,
+                  "Correct answer?", info["correct_answer"],
+                  "done @", frame)
+    avg_control = np.mean(total_control)
+    correct_answers = np.sum(agent_answers)
+
     if print_stats:
-        print("Success in", accuracy*100, "%")
+        print("Control in", avg_control, "%.", "Correct answer in", correct_answers)
         print("----------------------------VALIDATION END-----------------------------------------")
 
     if path is not None:
         for i, trial_data in enumerate(trials):
             trial_data.to_hdf(path, key="episode_"+str(i))
 
-    return accuracy, trials
+    return correct_answers, trials

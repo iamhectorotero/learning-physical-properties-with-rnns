@@ -36,11 +36,11 @@ if __name__ == "__main__" :
         force_answers = force_answers
 
     torch.backends.cudnn.benchmark = False
-    net_params = {"input_dim":10, "hidden_dim":40, "n_layers":4, "output_dim":6, "dropout":0.0}
+    net_params = {"input_dim":17, "hidden_dim":40, "n_layers":4, "output_dim":9, "dropout":0.0}
     value_network = ValueNetwork(**net_params).cuda()
     optimizer = optim.Adam(value_network.parameters(), lr=5e-4)
 
-    discountFactor = 0.95
+    discountFactor = 0.999
 
     every_conf = generate_every_world_configuration()
     every_world_answer = np.array(list(map(get_configuration_answer, every_conf)))
@@ -58,7 +58,7 @@ if __name__ == "__main__" :
                                                  stratify=every_world_answer[not_train_indices])
 
     TOTAL_STEPS = int(32e6)
-    N_WORLDS = 50000
+    N_WORLDS = 1000000
     worlds_per_agent = N_WORLDS // args.num_processes
     episodes_per_agent = 1000
     val_episodes_per_agent = 10
@@ -78,12 +78,13 @@ if __name__ == "__main__" :
 
     experience_replay = ()
     agent_answers = ()
-    training_data = {"loss":[], "control": [], "episode_length": []}
+    training_data = {"loss":[], "control": [], "episode_length": [], "correct_answer": []}
 
-    n_bodies = 1
+    n_bodies = 2
     action_repeat = 1
     MAX_STARTING_SPEED = 10
     MIN_STARTING_SPEED = 3
+    total_steps = 0
 
     for i in range(n_iterations):
         starting_puck_speed = MIN_STARTING_SPEED + (MAX_STARTING_SPEED - MIN_STARTING_SPEED) * i / (n_iterations - 1)
@@ -95,8 +96,8 @@ if __name__ == "__main__" :
         trainingArgs = (value_network, optimizer, episodes_per_agent, discountFactor,
                         startingEpisode, mass_answers, force_answers, agent_cond,
                         experience_replay, agent_answers, n_bodies, training_data,
-                        starting_puck_speed)
-        experience_replay, agent_answers, training_data = train(*trainingArgs)
+                        starting_puck_speed, total_steps)
+        experience_replay, agent_answers, training_data, total_steps = train(*trainingArgs)
 
         df = pd.DataFrame.from_dict(training_data)
         df.to_hdf("training_data.h5", key="training_data")
@@ -109,5 +110,4 @@ if __name__ == "__main__" :
 
         if len(train_cond) == 0:
             break
-
 
