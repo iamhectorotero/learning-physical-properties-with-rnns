@@ -7,6 +7,7 @@ from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
 from .utils import plot_confusion_matrix
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True,
@@ -94,7 +95,7 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
 
 def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None, 
                          seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False,
-                         categorical_columns=(), normalisation_cols=()):
+                         categorical_columns=(), normalisation_cols=(), save_plot_path=None):
     
     class_columns = list(class_columns)
     training_columns = list(training_columns)
@@ -126,5 +127,11 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
     predicted = [pred.cpu() for pred in predicted]
     Y_test = np.concatenate([y.cpu().numpy() for x, y in test_loader])
     
-    plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=False)
-    plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
+    # plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=False)
+    # if len(save_plot_paths) > 0:
+    #    matplotlib2tikz.save(save_plot_paths[0])
+    ax = plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
+    if save_plot_path:
+        plt.savefig(save_plot_path)
+        
+    return ax

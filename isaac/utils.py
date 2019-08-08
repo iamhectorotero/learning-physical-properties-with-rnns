@@ -20,16 +20,16 @@ def plot_confusion_matrix(y_true, y_pred, classes,
     """
     if not title:
         if normalize:
-            title = 'Normalized confusion matrix'
+            title = ''
         else:
-            title = 'Confusion matrix, without normalization'
+            title = ''
 
     # Compute confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     # Only use the labels that appear in the data
     # classes = classes[unique_labels(y_true, y_pred)]
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = 100*cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         # print("Normalized confusion matrix")
     else:
         pass
@@ -38,8 +38,14 @@ def plot_confusion_matrix(y_true, y_pred, classes,
     # print(cm)
 
     fig, ax = plt.subplots()
-    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
-    ax.figure.colorbar(im, ax=ax)
+    vmin, vmax = None, None
+    if normalize:
+        vmin = 0
+        vmax = 100
+        
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap, vmin=vmin, vmax=vmax)
+    # ax.figure.colorbar(im, ax=ax)
+
     # We want to show all ticks...
     ax.set(xticks=np.arange(cm.shape[1]),
            yticks=np.arange(cm.shape[0]),
@@ -54,12 +60,23 @@ def plot_confusion_matrix(y_true, y_pred, classes,
              rotation_mode="anchor")
 
     # Loop over data dimensions and create text annotations.
-    fmt = '.2f' if normalize else 'd'
+    fmt = '{0:.0f}%' if normalize else '{}'
     thresh = cm.max() / 2.
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
-            ax.text(j, i, format(cm[i, j], fmt),
+            ax.text(j, i, fmt.format(cm[i, j]),
                     ha="center", va="center",
                     color="white" if cm[i, j] > thresh else "black")
     fig.tight_layout()
     return ax
+
+def plot_timeseries(timeseries, labels, xlabel=None, ylabel=None):
+    plt.figure(figsize=(11, 7))
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid()
+    for length, ts_item in zip(labels, timeseries):
+        print(ts_item)
+        plt.errorbar(np.arange(timeseries.shape[-1]), ts_item.mean(axis=0), yerr=ts_item.std(axis=0), 
+                     label=str(length))
+    plt.legend()

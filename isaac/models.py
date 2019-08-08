@@ -4,11 +4,9 @@ import torch
 
 
 class ComplexRNNModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0.):
+    def __init__(self, input_dim, hidden_dim, n_layers, output_dim, dropout=0., cell_type=nn.GRU):
         super(ComplexRNNModel, self).__init__()
-        # RNN
-        self.rec_layer = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        # Readout layer
+        self.rec_layer = cell_type(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
@@ -17,13 +15,13 @@ class ComplexRNNModel(nn.Module):
         return out
     
     
-def initialise_model(network_dims, dropout=None, lr=0.01, seed=0, arch=ComplexRNNModel):
+def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    model = arch(*network_dims, dropout=dropout)
+    model = arch(*network_params, cell_type=cell_type)
     model = model.cuda()
 
     error = nn.CrossEntropyLoss().cuda()
