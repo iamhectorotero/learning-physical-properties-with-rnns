@@ -108,3 +108,4 @@ venv.bak/
 safe/
 *_model
 replays.h5
+*_plots/
