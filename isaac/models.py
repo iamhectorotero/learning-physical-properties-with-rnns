@@ -8,13 +8,13 @@ class ComplexRNNModel(nn.Module):
         super(ComplexRNNModel, self).__init__()
         self.rec_layer = cell_type(input_dim, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         self.fc = nn.Linear(hidden_dim, output_dim)
-    
+
     def forward(self, x):
         out, _ = self.rec_layer(x)
         out = self.fc(out[:, -1, :]) 
         return out
-    
-    
+
+
 def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU):
     np.random.seed(seed)
     torch.manual_seed(seed)

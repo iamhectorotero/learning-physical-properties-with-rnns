@@ -8,7 +8,8 @@ import torch.optim as optim
 from torch import multiprocessing as mp
 import pandas as pd
 
-from toddler.models import ValueNetwork, NonRecurrentValueNetwork, Policy
+from toddler.models import ValueNetwork
+from isaac.models import ComplexRNNModel
 from toddler.RecurrentWorker import train, saveModelNetwork
 from toddler.validate import validate
 
@@ -36,11 +37,15 @@ if __name__ == "__main__" :
         force_answers = force_answers
 
     torch.backends.cudnn.benchmark = False
-    net_params = {"input_dim":17, "hidden_dim":40, "n_layers":4, "output_dim":9, "dropout":0.0}
+    net_params = {"input_dim":17, "hidden_dim":25, "n_layers":4, "output_dim":9, "dropout":0.0}
     value_network = ValueNetwork(**net_params).cuda()
     optimizer = optim.Adam(value_network.parameters(), lr=5e-4)
 
-    discountFactor = 0.999
+    net_params = {"input_dim":17, "hidden_dim":25, "n_layers":4, "output_dim":3, "dropout":0.0}
+    yoked_network = ComplexRNNModel(**net_params).cuda()
+    yoked_optimizer = optim.Adam(yoked_network.parameters(), lr=0.005)
+
+    discountFactor = 0.99
 
     every_conf = generate_every_world_configuration()
     every_world_answer = np.array(list(map(get_configuration_answer, every_conf)))
@@ -58,7 +63,7 @@ if __name__ == "__main__" :
                                                  stratify=every_world_answer[not_train_indices])
 
     TOTAL_STEPS = int(32e6)
-    N_WORLDS = 1000000
+    N_WORLDS = 100000
     worlds_per_agent = N_WORLDS // args.num_processes
     episodes_per_agent = 1000
     val_episodes_per_agent = 10
@@ -78,7 +83,7 @@ if __name__ == "__main__" :
 
     experience_replay = ()
     agent_answers = ()
-    training_data = {"loss":[], "control": [], "episode_length": [], "correct_answer": []}
+    training_data = {"question_loss":[], "value_loss":[], "control": [], "episode_length": [], "correct_answer": []}
 
     n_bodies = 2
     action_repeat = 1
@@ -96,7 +101,7 @@ if __name__ == "__main__" :
         trainingArgs = (value_network, optimizer, episodes_per_agent, discountFactor,
                         startingEpisode, mass_answers, force_answers, agent_cond,
                         experience_replay, agent_answers, n_bodies, training_data,
-                        starting_puck_speed, total_steps)
+                        starting_puck_speed, total_steps, yoked_network, yoked_optimizer)
         experience_replay, agent_answers, training_data, total_steps = train(*trainingArgs)
 
         df = pd.DataFrame.from_dict(training_data)
@@ -104,6 +109,13 @@ if __name__ == "__main__" :
 
         agent_cond = val_cond[:val_episodes_per_agent]
         val_cond = val_cond[val_episodes_per_agent:]
+
+        for cond in val_cond:
+            cond['lf'] = [[0.0, 0.0], [0.0, 0.0]]
+            cond['lf'] = [[0.0, 0.0], [0.0, 0.0]]
+            vs = np.random.uniform(-0.0, 0.0, (n_bodies, 2))
+            cond['svs'] = [{"x": vs[i][0], "y": vs[i][1]} for i in range(n_bodies)]
+
         valArgs = (value_network, mass_answers, force_answers, agent_cond, n_bodies, action_repeat,
                    "replays.h5")
         validate(*valArgs)

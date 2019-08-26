@@ -14,17 +14,17 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
                   seq_start=None, seq_end=None, step_size=None, patience=np.inf):
     """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
     Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
-    
+
     best_model, best_val_accuracy = None, 0
     epoch_losses = []
     epoch_accuracies = [[],[]]
     epochs_without_improvement = 0
-    
+
     pbar = tqdm(range(num_epochs))
-    
+
     for epoch in pbar:
         model.eval()
-        
+
         train_accuracy = evaluate(model, train_loader, seq_start=seq_start, seq_end=seq_end, step_size=step_size)
         epoch_accuracies[0].append(train_accuracy)
         val_accuracy = evaluate(model, val_loader, seq_start=seq_start, seq_end=seq_end, step_size=step_size)

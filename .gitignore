@@ -107,5 +107,7 @@ venv.bak/
 *.mp4
 safe/
 *_model
-replays.h5
+*.h5
 *_plots/
+Dissertation\ Results/models/*
+Dissertation\ Results/scalers/*
