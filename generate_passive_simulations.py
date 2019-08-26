@@ -1,6 +1,6 @@
-from toddler.simulator.environment import physic_env
+from simulator.environment import physic_env
 import numpy as np
-from toddler.simulator.config import *
+from simulator.config import *
 from tqdm import tqdm
 import pandas as pd
 import os
