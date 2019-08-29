@@ -80,3 +80,12 @@ def plot_timeseries(timeseries, labels, xlabel=None, ylabel=None):
         plt.errorbar(np.arange(timeseries.shape[-1]), ts_item.mean(axis=0), yerr=ts_item.std(axis=0), 
                      label=str(length))
     plt.legend()
+
+
+def get_cuda_device_if_available():
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = "cuda:0"
+
+    return torch.device(device)
+

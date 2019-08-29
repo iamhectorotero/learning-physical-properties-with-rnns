@@ -34,8 +34,8 @@ def read_dataset(path, n_trials=None, seed=0, cols=None):
 
 def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, normalise_data=False, scaler=None,
                     transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS,
-                    categorical_columns=(), normalisation_cols=()):
-    
+                    categorical_columns=(), normalisation_cols=(), device=torch.device("cpu")):
+
     """
     datasets: list of datasets to which the same transformations will be applied.
     class_columns: iterable. If multiclass is False, then it represents a single class columns. If multiclass is True,
@@ -50,7 +50,7 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
     sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
     training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
     """
-    
+
     if len(normalisation_cols) == 0:
         normalisation_cols = training_columns
 
@@ -95,8 +95,8 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
             else:
                 X = normalise(X, scaler, fit_scaler=False, columns_to_normalise_bool_index=columns_to_normalise_bool_index)
 
-        X = torch.from_numpy(X).cuda()
-        Y = torch.from_numpy(Y).type(torch.LongTensor).cuda()
+        X = torch.from_numpy(X).to(device=device)
+        Y = torch.from_numpy(Y).type(torch.LongTensor).to(device=device)
 
         tensor_dataset = torch.utils.data.TensorDataset(X, Y)
         data_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=batch_size, shuffle=False)

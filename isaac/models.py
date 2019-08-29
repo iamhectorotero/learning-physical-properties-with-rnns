@@ -15,16 +15,17 @@ class ComplexRNNModel(nn.Module):
         return out
 
 
-def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU):
+def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU,
+                     device=torch.device("cpu")):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     model = arch(*network_params, cell_type=cell_type)
-    model = model.cuda()
+    model = model.to(device=device)
 
-    error = nn.CrossEntropyLoss().cuda()
+    error = nn.CrossEntropyLoss().to(device=device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     
     return model, error, optimizer

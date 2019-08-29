@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import torch
 
 from .simulator.environment import physic_env
 from .action_selection import e_greedy_action
@@ -9,7 +10,7 @@ from .action_coding import get_mouse_action, CLICK, NO_OP
 
 
 def validate(value_network, val_cond, timeout=1800, mass_answers={}, force_answers={}, n_bodies=4, action_repeat=1, path="replays.h5", print_stats=True, remove_features_in_index=(),
-             reward_not_answering_negatively=False, reward_not_controlling_negatively=False, reward_control=False, done_with_control=False, device="cuda:0", possible_actions=np.arange(0,6), mouse_exploration_frames=None, yoked_network=None, return_replays=False, force_answer_at_t=None):
+             reward_not_answering_negatively=False, reward_not_controlling_negatively=False, reward_control=False, done_with_control=False, device=torch.device("cpu"), possible_actions=np.arange(0,6), mouse_exploration_frames=None, yoked_network=None, return_replays=False, force_answer_at_t=None):
     value_network = value_network.to(device=device)
 
     if print_stats:

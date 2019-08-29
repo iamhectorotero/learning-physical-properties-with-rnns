@@ -8,7 +8,7 @@ import gc
 
 
 def e_greedy_action(state, valueNetwork, epsilon, t, current_pos=(None, None),
-                    yoked_network=None, episode=None, device="cuda:0",
+                    yoked_network=None, episode=None, device=torch.device("cpu"),
                     possible_actions=np.arange(0, 6), mouse_exploration_frames=None,
                     force_answer_at_t=None):
 

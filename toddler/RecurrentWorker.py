@@ -4,7 +4,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 from tqdm import tqdm
-import ipdb
 import time
 
 import pandas as pd
@@ -87,7 +86,7 @@ def train(value_network, optimizer, discount_factor, train_cond, n_bodies, train
           total_steps, action_repeat=1, reward_control=False, done_with_control=False,
           timeout=1800, starting_episode=0, current_step=0, mass_answers={}, force_answers={}, 
           experience_replay=(), agent_answers=(), model_directory="",
-          yoked_network=None, yoked_optimizer=None, device="cuda:0", remove_features_in_index=(),
+          yoked_network=None, yoked_optimizer=None, device=torch.device("cpu"), remove_features_in_index=(),
           reward_not_answering_negatively=False, reward_not_controlling_negatively=False,
           possible_actions=np.arange(0,6), mouse_exploration_frames=None, force_answer_at_t=None,
           train_yoked_network_every_n_episodes=None, sample_n_episodes=32,
@@ -242,7 +241,7 @@ def train(value_network, optimizer, discount_factor, train_cond, n_bodies, train
 
 
 def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
-          seq_length=600, learn_from_sequence_end=True, device="cuda:0"):
+          seq_length=600, learn_from_sequence_end=True, device=torch.device("cpu")):
 
     valueNetwork = valueNetwork.train()
     batch_states = []
@@ -310,7 +309,7 @@ def learn(valueNetwork, sampled_experience, discountFactor, optimizer,
 
 
 def learn_example_by_example(valueNetwork, sampled_experience, discountFactor, optimizer,
-                             seq_length=600, learn_from_sequence_end=True, device="cuda:0"):
+                             seq_length=600, learn_from_sequence_end=True, device=torch.device("cpu")):
 
     acc_loss = 0
 
@@ -358,7 +357,7 @@ def saveModelNetwork(model, strDirectory):
     torch.save(model.state_dict(), strDirectory)
 
 
-def train_supervised_network(yoked_network, yoked_optimizer, experience_replay, device="cuda:0"):
+def train_supervised_network(yoked_network, yoked_optimizer, experience_replay, device=torch.device("cpu")):
     error = nn.CrossEntropyLoss().to(device=device)
     episodes = [episode[0] for episode in experience_replay]
     targets = [episode[-1][0] for episode in experience_replay]
