@@ -6,7 +6,6 @@ import pandas as pd
 import os
 from multiprocessing import Pool
 from sklearn.model_selection import train_test_split
-import pyduktape
 
 def get_mass_answer(masses):
     if masses[0] > masses[1]:
@@ -62,6 +61,7 @@ def simulate_trial(trial):
 
 
 def simulate_trial_in_js(trial):
+    import pyduktape
     context = pyduktape.DuktapeContext()
     context.eval_js_file("simulator/js/box2d.js")
     context.eval_js_file("simulator/js/control_world.js")
