@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from .simulator.environment import physic_env
+from simulator.environment import physic_env
 from .action_selection import e_greedy_action
 from .RecurrentWorker import to_state_representation, remove_features_by_idx, init_mouse, store_transition
 from .action_coding import get_mouse_action, CLICK, NO_OP

@@ -2,9 +2,9 @@ import torch
 from torch.autograd import Variable
 import numpy as np
 from copy import deepcopy
-from .action_coding import MIN_X, MAX_X, MIN_Y, MAX_Y, ACCELERATE_IN_X, ACCELERATE_IN_Y, DECELERATE_IN_X, DECELERATE_IN_Y, ANSWER_QUESTION
-
 import gc
+
+from .action_coding import MIN_X, MAX_X, MIN_Y, MAX_Y, ACCELERATE_IN_X, ACCELERATE_IN_Y, DECELERATE_IN_X, DECELERATE_IN_Y, ANSWER_QUESTION
 
 
 def e_greedy_action(state, valueNetwork, epsilon, t, current_pos=(None, None),

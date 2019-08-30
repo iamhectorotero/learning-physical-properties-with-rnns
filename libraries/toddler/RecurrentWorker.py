@@ -1,30 +1,30 @@
+import os
+import time
+import random
+import gc
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import os
-from tqdm import tqdm
-import time
-
 import pandas as pd
-from .models import ValueNetwork
-from torch.autograd import Variable
-import random
-from copy import deepcopy
 import numpy as np
 
+from copy import deepcopy
+from torch.autograd import Variable
+from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm, trange
-from .simulator.environment import physic_env
+
+from simulator.environment import physic_env
 from .action_coding import get_mouse_action, mass_answers_idx, force_answers_idx
 from .action_coding import CLICK, NO_OP,  MAX_X, MIN_X, MAX_Y, MIN_Y, ANSWER_QUESTION
 from .action_selection import e_greedy_action
+from .models import ValueNetwork
 
 CHECKPOINT = 1000
 MOUSE_EXPLORATION_FRAMES = 1
 # TRAIN_YOKED_EVERY_N_EPISODES = 10
 
-import gc
 
 def check_for_alive_tensors():
     count = 0

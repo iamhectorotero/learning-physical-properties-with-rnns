@@ -1,4 +1,4 @@
-from isaac.constants import YOKED_TRAINING_COLS, BASIC_TRAINING_COLS, MOUSE_COLS, MOUSE_POSITION_COLS, MOUSE_CONTROL_COLS, S_PER_FRAME
+from .constants import YOKED_TRAINING_COLS, BASIC_TRAINING_COLS, MOUSE_COLS, MOUSE_POSITION_COLS, MOUSE_CONTROL_COLS, S_PER_FRAME
 import numpy as np
 
 def add_mouse_columns_to_passive_trials(trials):
