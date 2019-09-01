@@ -6,6 +6,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
 import torch.utils.data
+import os
+from shutil import rmtree
 
 from .constants import BASIC_TRAINING_COLS
 
@@ -88,4 +90,15 @@ def get_cuda_device_if_available():
         device = "cuda:0"
 
     return torch.device(device)
+
+
+def create_directory(path, delete_if_exists=False):
+    path_exists = os.path.exists(path)
+
+    if not path_exists:
+        os.makedirs(path, exist_ok=True)
+
+    if path_exists and delete_if_exists:
+        rmtree(path)
+        os.makedirs(path, exist_ok=True)
 
