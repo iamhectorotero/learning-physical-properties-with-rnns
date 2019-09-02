@@ -85,6 +85,11 @@ def plot_timeseries(timeseries, labels, xlabel=None, ylabel=None):
 
 
 def get_cuda_device_if_available():
+    """Returns:
+        device: A torch.device object with the first cuda device (cuda:0) if any are available.
+        Otherwise it returns the cpu device.
+    """
+
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
@@ -93,6 +98,16 @@ def get_cuda_device_if_available():
 
 
 def create_directory(path, delete_if_exists=False):
+    """Creates a directory in the specified path.
+    Args:
+        path (str): the path where the directory will be created (the name of the directory is included
+        in the path). If some of the directories on the way to the final one are missing, they
+        will also be created.
+
+        delete_if_exists (bool): If true and the directory exists, it will be first fully deleted (rm -rf)
+        and then created empty.
+    """
+
     path_exists = os.path.exists(path)
 
     if not path_exists:
