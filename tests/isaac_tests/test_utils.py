@@ -9,7 +9,7 @@ class TestGetCudaDeviceIfAvailable(unittest.TestCase):
     def test_cuda_device_is_returned(self):
         device_returned = utils.get_cuda_device_if_available()
         if os.environ.get("CUDA_VISIBLE_DEVICES", default="") == "":
-            warnings.warn("No CUDA device was found")
+            warnings.warn("No Cuda device available to run this test.")
             self.assertEqual(device_returned, torch.device("cpu"))
         else:
             self.assertEqual(device_returned, torch.device("cuda:0"))
