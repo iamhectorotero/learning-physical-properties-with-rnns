@@ -1,6 +1,8 @@
 import numpy as np
 
 
+#TODO: change name to class_counts_and_majority_class_proportion
+
 def class_proportions(dataset_loader):
     Y = []
     for x,y in dataset_loader:
@@ -9,4 +11,7 @@ def class_proportions(dataset_loader):
 
     counts = np.unique(Y, return_counts=True)[1]
     print(counts)
-    print("Majority class: ", np.max(counts) / np.sum(counts))
+    majority_class_proportion = np.max(counts) / np.sum(counts)
+    print("Majority class: ", majority_class_proportion)
+
+    return counts, majority_class_proportion
