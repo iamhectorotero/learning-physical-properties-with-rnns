@@ -2,7 +2,11 @@ from .constants import YOKED_TRAINING_COLS, BASIC_TRAINING_COLS, MOUSE_COLS, MOU
 import numpy as np
 
 def add_mouse_columns_to_passive_trials(trials):
-    
+    """ Adds the mouse position and control columns for each trial in the list by setting them to
+    a constant value for each trial step.
+    Args:
+        trials: a list of Pandas DataFrames.
+    """
     for trial in trials:
         for column in MOUSE_POSITION_COLS:
             trial[column] = 0.
@@ -11,15 +15,21 @@ def add_mouse_columns_to_passive_trials(trials):
                 trial[column] = True
             else:
                 trial[column] = False
-            
+
+
 def set_mouse_velocities(trials):
-    
+    """Adds the mouse velocity (mouse.vx and mouse.vy) for each trial in the list. The velocity is
+    calculated from the position shift in consecutive frames.
+    Args:
+        trials: a list of Pandas DataFrames.
+    """
     for trial in trials:
         trial[list(MOUSE_POSITION_COLS)]  /= 100
         positions = trial[list(MOUSE_POSITION_COLS)]
-        
+
         shifted_positions = positions.shift(1).fillna(positions.iloc[0])
-        trial[["mouse.vx", "mouse.vy"]] = np.abs((shifted_positions - positions) / S_PER_FRAME)
+        trial[["mouse.vx", "mouse.vy"]] = (positions - shifted_positions) / S_PER_FRAME
+
 
 def transform_velocity_to_speed_and_angle(trials):
     OBJECTS = ["o1", "o2", "o3", "o4", "mouse"]
