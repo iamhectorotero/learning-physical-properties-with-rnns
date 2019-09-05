@@ -57,8 +57,8 @@ def get_distances_between_objects(trials):
     for trial in trials:
         for i, obj_one in enumerate(OBJECTS):
             for obj_two in OBJECTS[i+1:]:
-                dist_x = trial[obj_one+".x"] - trial[obj_two+".x"]
-                dist_y = trial[obj_one+".y"] - trial[obj_two+".y"]
+                dist_x = trial[obj_two+".x"] - trial[obj_one+".x"]
+                dist_y = trial[obj_two+".y"] - trial[obj_one+".y"]
                 dist_mag = dist_x**2 + dist_y**2
                 trial["d2_"+obj_one+"_"+obj_two] = dist_mag
 
