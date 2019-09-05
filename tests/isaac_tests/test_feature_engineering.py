@@ -65,7 +65,7 @@ class TestAddMouseColumnsToPassiveTrials(unittest.TestCase):
     def test_with_different_length_trials(self):
         trials = []
         for _ in range(8):
-            trial_length = np.random.randint(0, 100)
+            trial_length = np.random.randint(1, 100)
             trial = pd.DataFrame(np.random.rand(trial_length, 10))
             trials.append(trial)
 
@@ -140,7 +140,7 @@ class TestSetMouseVelocities(unittest.TestCase):
 
         trials = []
         for _ in range(8):
-            trial_length = np.random.randint(0, 100)
+            trial_length = np.random.randint(1, 100)
             trial = pd.DataFrame(np.random.rand(trial_length, len(columns)), columns=columns)
             trials.append(trial)
 
