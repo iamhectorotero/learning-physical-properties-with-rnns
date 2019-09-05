@@ -62,14 +62,20 @@ def get_distances_between_objects(trials):
                 dist_mag = dist_x**2 + dist_y**2
                 trial["d2_"+obj_one+"_"+obj_two] = dist_mag
 
+# TODO: Change method name to reflect that cosine and sine features are obtained
 def get_angle_between_objects_features(trials):
+    """Finds the cosine and sine of the angles between every pair of pucks.
+    Args:
+        trials: a list of Pandas DataFrames.
+    """
     OBJECTS = ["o1", "o2", "o3", "o4"]
 
     for trial in trials:
         for i, obj_one in enumerate(OBJECTS):
             for obj_two in OBJECTS[i+1:]:
-                dist_x = np.abs(trial[obj_one+".x"] - trial[obj_two+".x"])
-                dist_y = np.abs(trial[obj_one+".y"] - trial[obj_two+".y"])
+                dist_x = trial[obj_two+".x"] - trial[obj_one+".x"]
+                dist_y = trial[obj_two+".y"] - trial[obj_one+".y"]
                 hyp = np.sqrt(dist_x**2 + dist_y**2)
-                trial["cos_"+obj_one+"_"+obj_two] = dist_x / hyp
-                trial["sin_"+obj_one+"_"+obj_two] = dist_y / hyp
+
+                trial["cos_"+obj_one+"_"+obj_two] = (dist_x / hyp).fillna(1)
+                trial["sin_"+obj_one+"_"+obj_two] = (dist_y / hyp).fillna(1)

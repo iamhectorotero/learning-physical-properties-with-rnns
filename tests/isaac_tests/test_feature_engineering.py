@@ -4,7 +4,7 @@ import numpy as np
 
 from isaac import feature_engineering
 from isaac.constants import (MOUSE_POSITION_COLS, MOUSE_CONTROL_COLS, S_PER_FRAME,
-                             POSITION_COLS, PUCK_SQUARE_DISTANCES)
+                             POSITION_COLS, PUCK_SQUARE_DISTANCES, PUCK_ANGLE_FEATURES)
 
 
 class TestAddMouseColumnsToPassiveTrials(unittest.TestCase):
@@ -213,6 +213,77 @@ class TestGetDistancesBetweenPucks(unittest.TestCase):
         feature_engineering.get_distances_between_objects(trials)
         self.assertTrue(self.are_distance_columns_in_every_trial(trials))
         self.assertTrue(self.are_distances_correct_in_every_trial(trials))
+
+
+class TestGetAngleBetweenObjectsFeatures(unittest.TestCase):
+    @staticmethod
+    def are_angle_features_columns_in_every_trial(trials):
+        for trial in trials:
+            for column in PUCK_ANGLE_FEATURES:
+                if column not in trial.columns:
+                    return False
+        return True
+
+    @staticmethod
+    def are_angle_features_correct_in_every_trial(trials):
+        def are_angle_features_between_pucks_correct(puck_x, puck_y, other_x, other_y,
+                                                     square_distances, cosine, sine):
+            puck_x = np.array(puck_x)
+            puck_y = np.array(puck_y)
+            other_x = np.array(other_x)
+            other_y = np.array(other_y)
+            distances = np.sqrt(np.array(square_distances))
+            cosine = np.array(cosine)
+            sine = np.array(sine)
+
+            is_cosine_feature_correct = np.isclose((puck_x + cosine*distances), other_x).all()
+            is_sine_feature_correct = np.isclose((puck_y + sine*distances), other_y).all()
+
+            if not is_cosine_feature_correct or not is_sine_feature_correct:
+                print(is_cosine_feature_correct, is_sine_feature_correct)
+                print(puck_x + cosine*distances)
+                print(other_x)
+
+            return is_cosine_feature_correct and is_sine_feature_correct
+
+        pucks = ["o"+str(i) for i in range(1, 5)]
+        for trial in trials:
+            for i, first_puck in enumerate(pucks):
+                for second_puck in pucks[i+1:]:
+                    if not are_angle_features_between_pucks_correct(trial[first_puck+".x"],
+                                                                    trial[first_puck+".y"],
+                                                                    trial[second_puck+".x"],
+                                                                    trial[second_puck+".y"],
+                                                                    trial["d2_"+first_puck+"_"+second_puck],
+                                                                    trial["cos_"+first_puck+"_"+second_puck],
+                                                                    trial["sin_"+first_puck+"_"+second_puck]):
+                        return False
+        return True
+
+    def test_with_overlapping_pucks(self):
+        columns = list(POSITION_COLS)
+        trials = [pd.DataFrame(np.zeros((25, len(columns))),
+                               columns=columns) for _ in range(7)]
+        feature_engineering.get_distances_between_objects(trials)
+        feature_engineering.get_angle_between_objects_features(trials)
+
+        self.assertTrue(self.are_angle_features_columns_in_every_trial(trials))
+        self.assertTrue(self.are_angle_features_correct_in_every_trial(trials))
+
+    def test_with_different_length_trials(self):
+        columns = list(POSITION_COLS)
+
+        trials = []
+        for _ in range(8):
+            trial_length = np.random.randint(1, 100)
+            trial = pd.DataFrame(np.random.rand(trial_length, len(columns)), columns=columns)
+            trials.append(trial)
+
+        feature_engineering.get_distances_between_objects(trials)
+        feature_engineering.get_angle_between_objects_features(trials)
+
+        self.assertTrue(self.are_angle_features_columns_in_every_trial(trials))
+        self.assertTrue(self.are_angle_features_correct_in_every_trial(trials))
 
 
 if __name__ == "__main__":
