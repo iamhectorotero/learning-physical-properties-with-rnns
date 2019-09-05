@@ -39,8 +39,16 @@ def transform_velocity_to_speed_and_angle(trials):
             trial[obj+".speed"] = np.sqrt(trial[obj+".vx"]**2 + trial[obj+".vy"]**2)        
             trial[obj+".angle"] = np.arctan(trial[obj+".vy"] / trial[obj+".vx"])
             trial[obj+".angle"].fillna(0, inplace=True)
-        
+"""
+
+
+# TODO: Change method name to "square distances" or change functionality to match name
 def get_distances_between_objects(trials):
+    """Finds the square distance between every pair of pucks. To do so, applies the Pythagoras'
+    theorem between the points defined by the coordinates of the pucks e.g. (o1.x, o1.y).
+    Args:
+        trials: a list of Pandas DataFrames."""
+
     OBJECTS = ["o1", "o2", "o3", "o4"]
 
     for trial in trials:

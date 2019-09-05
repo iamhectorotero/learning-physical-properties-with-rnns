@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 
 from isaac import feature_engineering
-from isaac.constants import MOUSE_POSITION_COLS, MOUSE_CONTROL_COLS, S_PER_FRAME
+from isaac.constants import (MOUSE_POSITION_COLS, MOUSE_CONTROL_COLS, S_PER_FRAME,
+                             POSITION_COLS, PUCK_SQUARE_DISTANCES)
 
 
 class TestAddMouseColumnsToPassiveTrials(unittest.TestCase):
@@ -146,6 +147,72 @@ class TestSetMouseVelocities(unittest.TestCase):
         feature_engineering.set_mouse_velocities(trials)
         self.assertTrue(self.are_mouse_velocity_columns_in_every_trial(trials, MOUSE_POSITION_COLS))
         self.assertTrue(self.are_velocities_correct(trials))
+
+
+class TestGetDistancesBetweenPucks(unittest.TestCase):
+    @staticmethod
+    def are_distance_columns_in_every_trial(trials):
+        for trial in trials:
+            for column in PUCK_SQUARE_DISTANCES:
+                if column not in trial.columns:
+                    return False
+        return True
+
+    @staticmethod
+    def are_distances_correct_in_every_trial(trials):
+        def are_distances_between_pucks_correct(puck_x, puck_y, other_x, other_y, distances):
+            puck_x = np.array(puck_x)
+            puck_y = np.array(puck_y)
+            other_x = np.array(other_x)
+            other_y = np.array(other_y)
+            distances = np.array(distances)
+
+            dx = (other_x - puck_x)**2
+            dy = (other_y - puck_y)**2
+            return np.isclose((dx + dy), distances).all()
+
+        pucks = ["o"+str(i) for i in range(1, 5)]
+        for trial in trials:
+            for i, first_puck in enumerate(pucks):
+                for second_puck in pucks[i+1:]:
+                    if not are_distances_between_pucks_correct(trial[first_puck+".x"],
+                                                               trial[first_puck+".y"],
+                                                               trial[second_puck+".x"],
+                                                               trial[second_puck+".y"],
+                                                               trial["d2_"+first_puck+"_"+second_puck]):
+                        return False
+        return True
+
+    def test_moving_pucks(self):
+        columns = list(POSITION_COLS)
+        trials = [pd.DataFrame(np.random.rand(25, len(columns)),
+                               columns=columns) for _ in range(7)]
+        feature_engineering.get_distances_between_objects(trials)
+
+        self.assertTrue(self.are_distance_columns_in_every_trial(trials))
+        self.assertTrue(self.are_distances_correct_in_every_trial(trials))
+
+    def test_static_pucks(self):
+        columns = list(POSITION_COLS)
+        trials = [pd.DataFrame(np.zeros((25, len(columns))),
+                               columns=columns) for _ in range(7)]
+        feature_engineering.get_distances_between_objects(trials)
+
+        self.assertTrue(self.are_distance_columns_in_every_trial(trials))
+        self.assertTrue(self.are_distances_correct_in_every_trial(trials))
+
+    def test_with_different_length_trials(self):
+        columns = list(POSITION_COLS)
+
+        trials = []
+        for _ in range(8):
+            trial_length = np.random.randint(1, 100)
+            trial = pd.DataFrame(np.random.rand(trial_length, len(columns)), columns=columns)
+            trials.append(trial)
+
+        feature_engineering.get_distances_between_objects(trials)
+        self.assertTrue(self.are_distance_columns_in_every_trial(trials))
+        self.assertTrue(self.are_distances_correct_in_every_trial(trials))
 
 
 if __name__ == "__main__":
