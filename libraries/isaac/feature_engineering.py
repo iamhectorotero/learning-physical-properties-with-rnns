@@ -31,12 +31,15 @@ def set_mouse_velocities(trials):
         trial[["mouse.vx", "mouse.vy"]] = (positions - shifted_positions) / S_PER_FRAME
 
 
+"""
+This method wasn't used throughout the project and is not tested
+
 def transform_velocity_to_speed_and_angle(trials):
     OBJECTS = ["o1", "o2", "o3", "o4", "mouse"]
     
     for trial in trials:
         for i, obj in enumerate(OBJECTS):
-            trial[obj+".speed"] = np.sqrt(trial[obj+".vx"]**2 + trial[obj+".vy"]**2)        
+            trial[obj+".speed"] = np.sqrt(trial[obj+".vx"]**2 + trial[obj+".vy"]**2)
             trial[obj+".angle"] = np.arctan(trial[obj+".vy"] / trial[obj+".vx"])
             trial[obj+".angle"].fillna(0, inplace=True)
 """
