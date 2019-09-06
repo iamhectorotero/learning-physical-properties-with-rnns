@@ -1,18 +1,31 @@
+import os
 import pandas as pd
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from collections import OrderedDict
 import torch
 import torch.utils.data
 from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
 
-def read_dataset(path, n_trials=None, seed=0, cols=None):
+def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True):
+    """Reads a local hdf/h5 file consisting of one or more DataFrames.
+    Args:
+        path: the file path.
+        n_trials: The number of DataFrames to be read. If larger than the total number of DataFrames
+        stored, it will default to this value. If lower, a random subset will be sampled.
+        seed: a seed for Numpy to control in which order DataFrames are read.
+        cols: if specified, only these columns  will be read from the DataFrames. If duplicated, they will only be read once.
+
+        add_class_columns: (default True) class columns (see constants MASS_CLASS_COLS and FORCE_CLASS_COLS) will be added to the list of cols (if those are specified).
+    """
+
     np.random.seed(seed)
 
-    with pd.HDFStore(path) as hdf:
+    with pd.HDFStore(path, mode="r") as hdf:
         keys = dir(hdf.root)[124:]
         keys = sorted(keys)
 
@@ -23,8 +36,10 @@ def read_dataset(path, n_trials=None, seed=0, cols=None):
         
         if cols is not None:
             cols = list(cols)
-            cols += MASS_CLASS_COLS
-            cols += FORCE_CLASS_COLS
+            if add_class_columns:
+                cols += MASS_CLASS_COLS
+                cols += FORCE_CLASS_COLS
+            cols = list(OrderedDict.fromkeys(cols))
             dataset = [hdf[trial_i][cols] for trial_i in tqdm(trials)]
         else:
             dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
