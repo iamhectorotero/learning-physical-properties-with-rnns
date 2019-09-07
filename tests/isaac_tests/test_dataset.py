@@ -2,6 +2,8 @@ import unittest
 import pandas as pd
 import numpy as np
 import os
+from sklearn.preprocessing import StandardScaler
+from sklearn.exceptions import NotFittedError
 
 from functools import reduce
 from isaac import dataset
@@ -188,6 +190,77 @@ class TestReadDataset(unittest.TestCase):
                 break
 
         self.assertTrue(different_order)
+
+
+class TestNormalise(unittest.TestCase):
+    @staticmethod
+    def are_mean_and_variance_correct(X):
+        X = X.reshape(-1, X.shape[-1])
+        means = np.mean(X, axis=0)
+        variances = np.var(X, axis=0)
+        return (np.isclose(means, np.zeros_like(means)).all() and
+                np.isclose(variances, np.ones_like(variances)).all())
+
+    @staticmethod
+    def is_shape_correct(original_shape, X):
+        return original_shape == X.shape
+
+    def test_fitting_scaler(self):
+        scaler = StandardScaler()
+        original_shape = (25, 10, 7)
+        X = np.random.rand(*original_shape)
+        X = dataset.normalise(X, scaler, fit_scaler=True)
+
+        self.assertTrue(self.is_shape_correct(original_shape, X))
+        self.assertTrue(self.are_mean_and_variance_correct(X))
+
+    def test_using_previously_fitted_scaler(self):
+        scaler = StandardScaler()
+        original_shape = (25, 10, 7)
+        X = np.random.rand(*original_shape)
+        X = dataset.normalise(X, scaler, fit_scaler=True)
+
+        scale_ = scaler.scale_
+        mean_= scaler.mean_
+        n_samples_seen_ = scaler.n_samples_seen_
+
+        X2 = np.random.rand(50, 4, 7)
+        X2 = dataset.normalise(X, scaler, fit_scaler=False)
+
+        self.assertTrue(np.isclose(scaler.scale_, scale_).all())
+        self.assertTrue(np.isclose(scaler.mean_, mean_).all())
+        self.assertEqual(scaler.n_samples_seen_, n_samples_seen_)
+
+    def test_using_previously_not_fitted_scaler(self):
+        scaler = StandardScaler()
+        original_shape = (25, 10, 7)
+        X = np.random.rand(*original_shape)
+
+        with self.assertRaises(NotFittedError):
+            dataset.normalise(X, scaler, fit_scaler=False)
+
+    def test_not_normalising_some_columns(self):
+        scaler = StandardScaler()
+        original_shape = (25, 10, 7)
+        columns_to_normalise_bool_index = np.array([True, True, False, True, False, True, True])
+
+        original_X = np.random.rand(*original_shape)
+        X = dataset.normalise(original_X, scaler, True, columns_to_normalise_bool_index)
+
+        self.assertTrue(np.isclose(original_X[:, :, columns_to_normalise_bool_index],
+                                   X[:, :, columns_to_normalise_bool_index]).all())
+
+        self.assertTrue(self.are_mean_and_variance_correct(X[:, :, columns_to_normalise_bool_index]))
+
+    def test_not_normalising_all_columns(self):
+        scaler = StandardScaler()
+        original_shape = (25, 10, 7)
+        columns_to_normalise_bool_index = np.array([False for _ in range(original_shape[-1])])
+
+        X = np.random.rand(*original_shape)
+        with self.assertRaises(ValueError):
+            dataset.normalise(X, scaler, True, columns_to_normalise_bool_index)
+
 
 if __name__ == "__main__":
     unittest.main()

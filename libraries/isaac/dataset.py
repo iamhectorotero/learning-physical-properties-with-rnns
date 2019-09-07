@@ -124,6 +124,20 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
 
 
 def normalise(X, scaler, fit_scaler=True, columns_to_normalise_bool_index=None):
+    """Applies the scaler to the numpy array data.
+    Args:
+        X: a 3D NumPy array (batch, sequence, features).
+
+        scaler: a scikit-learn scaler. E.g. StandardScaler
+
+        fit_scaler: (default: True) whether to fit the scaler to the provided data. If False, the
+        scaler must have been previously fitted.
+
+        columns_to_normalise_bool_index: boolean index of length equal to the features. If provided,
+        columns whose position in the index are False won't be normalised. Uses: not normalising
+        categorical features.
+    """
+
     original_shape = X.shape
     X = X.reshape(-1, original_shape[-1])
 
