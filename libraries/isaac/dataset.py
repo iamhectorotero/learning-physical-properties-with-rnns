@@ -152,6 +152,9 @@ def normalise(X, scaler, fit_scaler=True, columns_to_normalise_bool_index=None):
     return X.reshape(original_shape)
 
 
+"""
+# These are unused and thus untested methods. Use at your own risk.
+
 def split_data_in_train_and_test(X, Y, test_size, equiprobable_training_classes=True):
 
     if equiprobable_training_classes:
@@ -216,4 +219,4 @@ def split_in_subsequences(trials, seq_size):
         for i in range(length//seq_size):
             subsequences.append(trial.iloc[i*seq_size:(i+1)*seq_size])
         
-    return subsequences
+    return subsequences"""
