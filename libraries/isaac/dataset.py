@@ -47,6 +47,11 @@ def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True)
     return dataset
 
 
+def are_classes_one_hot_encoded(class_values):
+    unique_values, counts = np.unique(class_values, return_counts=True)
+    return np.array_equal(unique_values, [0, 1]) and counts[1] == 1
+
+
 def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, normalise_data=False, scaler=None,
                     transforms=(), sliding_window_size=1, training_columns=BASIC_TRAINING_COLS,
                     categorical_columns=(), normalisation_cols=(), device=torch.device("cpu")):
@@ -118,10 +123,16 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
             if multiclass:
                 y = []
                 for class_i_columns in class_columns:
-                    y.append(np.argmax(np.array(trial[class_i_columns].iloc[0])))
+                    class_values = np.array(trial[class_i_columns].iloc[0])
+                    if not are_classes_one_hot_encoded(class_values):
+                        raise ValueError("Classes are not one-hot encoded")
+                    y.append(np.argmax(class_values))
                 Y.append(y)
             else:
-                Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
+                class_values = np.array(trial[class_columns].iloc[0])
+                if not are_classes_one_hot_encoded(class_values):
+                    raise ValueError("Classes are not one-hot encoded")
+                Y.append(np.argmax(class_values))
 
         X = np.array(X)
         """if sliding_window_size > 1:
