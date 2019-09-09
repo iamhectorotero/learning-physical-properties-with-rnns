@@ -720,6 +720,14 @@ class TestAreClassesOneHotEncoded(unittest.TestCase):
         for class_option in classes:
             self.assertFalse(dataset.are_classes_one_hot_encoded(class_option))
 
+    def test_multidimensional_vector(self):
+        classes = [[0, 0, 1], [1, 0, 0], [0, 1, 0]]
+        try:
+            dataset.are_classes_one_hot_encoded(classes)
+        except AssertionError:
+            pass
+        else:
+            self.fail("Assertion Error not raised")
 
 if __name__ == "__main__":
     unittest.main()
