@@ -52,18 +52,44 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
                     categorical_columns=(), normalisation_cols=(), device=torch.device("cpu")):
 
     """
-    datasets: list of datasets to which the same transformations will be applied.
+    Args:
+    datasets: list of datasets to which the same transformations will be applied. Inside a dataset,
+    all trials must be of the same length.
+
     class_columns: iterable. If multiclass is False, then it represents a single class columns. If multiclass is True,
-                   then it represents a list of classes for training a multiple-branch network.
+    then it represents a list of classes for training a multiple-branch network.
+
     multiclass: boolean. Modifies the behavior of class_columns as above.
+
     batch_size: integer. batch size of every dataset loader
+
     normalise_data: boolean. whether to apply a StandardScaler normalisation to the data. if datasets contains more than
-                    one dataset, it will be fitted in the first dataset and applied to the rest.
+    one dataset, it will be fitted in the first dataset and applied to the rest.
+
     scaler: if None and normalise_data=True, it will be fitted to the data. If a scaler previously fitted, then it will
-            be used to transform every dataset.
-    transforms: iterable. Functions to be applied to each trial of every dataset.
+    be used to transform every dataset.
+
+    transforms: iterable. Functions to be applied to each trial of every dataset. Each transform receives a Pandas DataFrame and should modify it inplace.
+
     sliding_window_size: integer. If larger than 1, the returned dataset will consist of windows of the indicated size.
+
     training_columns: iterable. These columns will be extracted from the dataset so that they can be used to predict.
+
+    categorical_columns: iterable. These columns (which must exist in every trial of every dataset)
+    will not be normalised even if normalise_data is True. Class columns will not be normalised.
+
+    normalisation_cols: iterable. If not specified, it defaults to all training columns. If
+    specified, only columns in this list and not in the categorical_columns list will be normalised.
+    Execution will fail if a column is in both "categorical_columns" and "normalisation_cols".
+
+    device: the datasets will be sent to this torch.device. Defaults to cpu.
+
+    Returns:
+        loaders: if len(datasets) > 1, a list of loaders corresponding to the list of datasets passed
+        as arguments. If len(datasets) == 1, a single DatasetLoader will be returned.
+
+        scaler: the fitted or used dataset. None, if no scaler was passed and no normalisation
+        took place.
     """
 
     if len(normalisation_cols) == 0:
