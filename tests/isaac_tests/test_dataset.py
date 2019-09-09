@@ -692,5 +692,34 @@ class TestPrepareDataset(unittest.TestCase):
         self.assertFalse(dataset_loader.dataset.tensors[1].is_cuda)
 
 
+class TestAreClassesOneHotEncoded(unittest.TestCase):
+    def test_boolean_classes(self):
+        classes = [[False, False, True], [True, False, False], [False, True, False]]
+        for class_option in classes:
+            self.assertTrue(dataset.are_classes_one_hot_encoded(class_option))
+
+    def test_more_than_three_classes(self):
+        classes = [False, False, True, False, False, False, False]
+        self.assertTrue(dataset.are_classes_one_hot_encoded(classes))
+
+    def test_integer_classes(self):
+        classes = [[0, 0, 1], [1, 0, 0], [0, 1, 0]]
+
+        for class_option in classes:
+            self.assertTrue(dataset.are_classes_one_hot_encoded(class_option))
+
+    def test_not_one_hot_encoded_classes(self):
+        classes = [[1, 0, 1], [False, True, True], [True, 1, False]]
+
+        for class_option in classes:
+            self.assertFalse(dataset.are_classes_one_hot_encoded(class_option))
+
+    def test_non_binary_classes(self):
+        classes = [[1.23, 0.3, 1.23], ["", "c", ""]]
+
+        for class_option in classes:
+            self.assertFalse(dataset.are_classes_one_hot_encoded(class_option))
+
+
 if __name__ == "__main__":
     unittest.main()
