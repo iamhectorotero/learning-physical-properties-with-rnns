@@ -124,9 +124,9 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
                 Y.append(np.argmax(np.array(trial[class_columns].iloc[0])))
 
         X = np.array(X)
-        if sliding_window_size > 1:
+        """if sliding_window_size > 1:
             X = get_sliding_windows_for_all_trials(X, sliding_window_size)
-            X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])
+            X = X.reshape(X.shape[0], X.shape[1], X.shape[2] * X.shape[3])"""
         Y = np.array(Y)
 
         if normalise_data:
