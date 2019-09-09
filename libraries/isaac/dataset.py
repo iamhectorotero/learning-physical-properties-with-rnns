@@ -21,6 +21,8 @@ def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True)
         cols: if specified, only these columns  will be read from the DataFrames. If duplicated, they will only be read once.
 
         add_class_columns: (default True) class columns (see constants MASS_CLASS_COLS and FORCE_CLASS_COLS) will be added to the list of cols (if those are specified).
+    Returns:
+        dataset: a list of Pandas DataFrames. One per HDF key found in the file path.
     """
 
     np.random.seed(seed)
@@ -48,6 +50,13 @@ def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True)
 
 
 def are_classes_one_hot_encoded(class_values):
+    """Checks if a vector is one-hot encoded
+    Args:
+        class_values: a 1D vector.
+    Returns:
+        boolean: True if the vector is one-hot encoded. False otherwise"""
+
+    assert len(np.array(class_values).shape) == 1
     unique_values, counts = np.unique(class_values, return_counts=True)
     return np.array_equal(unique_values, [0, 1]) and counts[1] == 1
 
@@ -176,6 +185,8 @@ def normalise(X, scaler, fit_scaler=True, columns_to_normalise_bool_index=None):
         columns_to_normalise_bool_index: boolean index of length equal to the features. If provided,
         columns whose position in the index are False won't be normalised. Uses: not normalising
         categorical features.
+    Returns:
+        X: A normalised version of the X passed as parameter.
     """
 
     original_shape = X.shape
