@@ -99,8 +99,11 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
 
     if len(normalisation_cols) == 0:
         normalisation_cols = training_columns
+    elif len(set(categorical_columns) & set(normalisation_cols)) > 0:
+        raise ValueError("A column is listed both as categorical and as column to normalise")
 
     training_columns = list(training_columns)
+
     columns_to_normalise_bool_index = np.array([(col not in categorical_columns) and 
                                                 (col in normalisation_cols) 
                                                 for col in training_columns])
