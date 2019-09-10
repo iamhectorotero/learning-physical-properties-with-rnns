@@ -51,6 +51,48 @@ def get_force_answer_from_flat_list(forces):
     return "none"
 
 
+def get_configuration_answer(config):
+    """Returns a concatenated string-based answer given a world configuration of masses and forces.
+    Args:
+        config: a length-2 list with the mass configuration in the first index and the force
+        configuration in the second.
+    Returns:
+        answer: the concatenated answers for mass and force. See get_mass_answer and
+        get_force_answer_from_flat_list."""
+    masses = config[0]
+    forces = config[1]
+
+    mass_answer = get_mass_answer(masses)
+    force_answer = get_force_answer_from_flat_list(forces)
+    return mass_answer+"_"+force_answer
+
+
+def cartesian_product(mass_all_configs, force_all_configs):
+    """Finds the cartesian product between two lists.
+    Args:
+        mass_all_configs: all the mass configurations to be considered.
+        force_all_configs: all the force configurations to be considered.
+    Returns:
+        all_configs: the cartesian product of the two arguments."""
+    all_configs = []
+    for mass_config in mass_all_configs:
+        for force_config in force_all_configs:
+            all_configs.append((mass_config, force_config))
+    return all_configs
+
+
+def generate_every_world_configuration():
+    """Generates all possible world configurations as the cartesian product of the possible mass
+    and force configurations.
+
+    Returns:
+        configurations: a NumPy array with all the configurations."""
+
+    mass_all_possible = [target_pucks_mass + [1, 1] for target_pucks_mass in [[1, 1], [1, 2], [2, 1]]]
+    force_all_possible = np.array(generate_possible(3, 6))
+    return np.array(cartesian_product(mass_all_possible, force_all_possible))
+
+
 def simulate_trial(trial):
     """Simulates a trial in the passive condition (i.e. without mouse interaction.
     Args:
@@ -87,7 +129,7 @@ def simulate_trial(trial):
     return trial_data
 
 
-def simulate_trial_in_js(trial):
+"""def simulate_trial_in_js(trial):
     import pyduktape
     context = pyduktape.DuktapeContext()
     context.eval_js_file("simulator/js/box2d.js")
@@ -115,7 +157,7 @@ def simulate_trial_in_js(trial):
     trial_data["none"] = force_answer == "none"
     trial_data["repel"] = force_answer == "repel"
 
-    return trial_data
+    return trial_data"""
 
 
 def get_configuration_answer(config):

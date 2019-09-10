@@ -29,21 +29,6 @@ qlearning_gamma = 0.99
 init_mouse = (3, 2)
 reward_stop = 0.95
 
-
-# Functions for generating candidate settings
-def transfer(n,x):
-    b=[]
-    while True:
-        s=n//x
-        y=n%x
-        b=b+[y]
-        if s==0:
-            break
-        n=s
-    b.reverse()
-    return b
-
-
 def generate_force(force_possible):
     force_list = []
     for num in force_possible:
@@ -56,12 +41,6 @@ def generate_force(force_possible):
         force_list.append(force)
     return force_list
 
-
-def generate_possible(level, length):
-    possible = []
-    for i in range(level**length):
-        possible.append([0]*(length-len(transfer(i,level)))+transfer(i,level))
-    return possible
 
 # Functions for generating initial conditions
 def generate_cond(configurations, timeout=TIMEOUT):
@@ -82,7 +61,26 @@ def generate_cond(configurations, timeout=TIMEOUT):
     return cond_list
 
 
-def load_cond(file_name, size):
+def generate_possible(level, length):
+    possible = []
+    for i in range(level**length):
+        possible.append([0]*(length-len(transfer(i,level)))+transfer(i,level))
+    return possible
+
+def transfer(n,x):
+    b=[]
+    while True:
+        s=n//x
+        y=n%x
+        b=b+[y]
+        if s==0:
+            break
+        n=s
+    b.reverse()
+    return b
+
+
+"""def load_cond(file_name, size):
     if os.path.exists(file_name):
         with open(file_name,'r') as f:
             cond_list = json.load(f)
@@ -93,20 +91,6 @@ def load_cond(file_name, size):
     return cond_list
 
 
-def cartesian_product(mass_all_configs, force_all_configs):
-    all_configs = []
-    for mass_config in mass_all_configs:
-        for force_config in force_all_configs:
-            all_configs.append((mass_config, force_config))
-
-    return all_configs
-
-def generate_every_world_configuration():
-    
-    mass_all_possible = [target_pucks_mass + [1, 1] for target_pucks_mass in [[1, 1], [1, 2], [2, 1]]]
-    force_all_possible = np.array(generate_possible(3, 6))
-    return np.array(cartesian_product(mass_all_possible, force_all_possible))
-
-# train_cond = load_cond("train_cond"+str(TIMEOUT)+".json", 10000)
-# test_cond = load_cond("test_cond"+str(TIMEOUT)+".json", 100)
-# print("timeout", train_cond[0]['timeout'])
+train_cond = load_cond("train_cond"+str(TIMEOUT)+".json", 10000)
+test_cond = load_cond("test_cond"+str(TIMEOUT)+".json", 100)
+print("timeout", train_cond[0]['timeout'])"""
