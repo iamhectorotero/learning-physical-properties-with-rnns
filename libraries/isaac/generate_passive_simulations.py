@@ -160,60 +160,86 @@ def simulate_trial(trial):
     return trial_data"""
 
 
-def get_configuration_answer(config):
-    masses = config[0]
-    forces = config[1]
+def create_passive_datasets_for_training(n_simulations_train, n_simulations_val, n_simulations_test,
+                                         train_size, val_size, test_size, train_hdf_path, val_hdf_path,
+                                         test_hdf_path, n_processes, trial_hdf_key_prefix):
 
-    mass_answer = get_mass_answer(masses)
-    force_answer = get_force_answer_from_flat_list(forces)
-    return mass_answer+"_"+force_answer
+    """Creates .h5 datasets as the results of simulating different world configurations for the
+    purposes of training a model.
+    Args:
+        n_simulations_train, n_simulations_val, n_simulations_test: (integer) indicates how many
+        trials must be included in each dataset.
 
+        train_size, val_size, test_size: float [0, 1), indicates the percentage of configurations
+        that will be unique to the corresponding dataset. Once the configurations are divided in
+        the different sets, each one can be sampled multiple times.
 
-if __name__ == "__main__":
-    N_SIMULATIONS_TRAIN = 3500
-    N_SIMULATIONS_VAL = 1000
-    N_SIMULATIONS_TEST = 1000
+        train_hdf_path, val_hdf_path, test_hdf_path: (string) indicates the path where the different
+        datasets must be saved.
+
+        n_processes: (integer) indicates how many processes will be used to generate the simulations.
+        That is, if n_processes > 1, the simulations for a dataset will be generated in parallel.
+
+        trial_hdf_key_prefix: each one of the trials that are written to the .h5 file must have a
+        key. This string (to which an integer will be added) will be used as prefix to the keys.
+        E.g. "trial_" will generate the keys "trial_0", "trial_1", etc.
+    """
 
     every_world_configuration = generate_every_world_configuration()
     every_world_answer = np.array(list(map(get_configuration_answer, every_world_configuration)))
     n_configurations = len(every_world_configuration)
 
-    train_size = 0.7
-    val_size = 0.15
-    test_size = 0.15
-
-    print(n_configurations, "possible world configurations")
-    print(train_size*100, "\% will be used for training", val_size*100, "\%for val", test_size*100, "\%for test")
-    print("From those configurations", (N_SIMULATIONS_TRAIN, N_SIMULATIONS_VAL, N_SIMULATIONS_TEST),
-          "simulations will be produced respectively")
+    print(n_configurations, "possible world configurations.")
+    print(str(train_size*100)+" % will be used for training "+str(val_size*100)+"% for val and "+str(test_size*100)+"% for test.")
+    print("From those configurations", (n_simulations_train, n_simulations_val, n_simulations_test),
+          "simulations will be produced respectively.")
 
     all_indices = np.arange(n_configurations)
     train_indices, not_train_indices = train_test_split(all_indices, train_size=train_size,
                                                         random_state=0, stratify=every_world_answer)
-    val_indices, test_indices = train_test_split(not_train_indices, train_size=0.5,
-                                                 random_state=0, 
+    val_indices, test_indices = train_test_split(not_train_indices, train_size=val_size / (val_size + test_size),
+                                                 random_state=0,
                                                  stratify=every_world_answer[not_train_indices])
 
-    repeated_train_indices = np.random.choice(train_indices, N_SIMULATIONS_TRAIN, replace=True)
-    repeated_val_indices = np.random.choice(val_indices, N_SIMULATIONS_VAL, replace=True)
-    repeated_test_indices = np.random.choice(test_indices, N_SIMULATIONS_TEST, replace=True)
+    repeated_train_indices = np.random.choice(train_indices, n_simulations_train, replace=True)
+    repeated_val_indices = np.random.choice(val_indices, n_simulations_val, replace=True)
+    repeated_test_indices = np.random.choice(test_indices, n_simulations_test, replace=True)
 
     train_cond = generate_cond(every_world_configuration[repeated_train_indices])
     val_cond = generate_cond(every_world_configuration[repeated_val_indices])
     test_cond = generate_cond(every_world_configuration[repeated_test_indices])
 
-    TRAIN_PASSIVE_HDF_PATH = "train_passive_trials.h5"
-    VAL_PASSIVE_HDF_PATH = "val_passive_trials.h5"
-    TEST_PASSIVE_HDF_PATH = "test_passive_trials.h5"
-
-    for cond, path in zip([train_cond, val_cond, test_cond], [TRAIN_PASSIVE_HDF_PATH, VAL_PASSIVE_HDF_PATH, TEST_PASSIVE_HDF_PATH]):
+    for cond, path in zip([train_cond, val_cond, test_cond], [train_hdf_path, val_hdf_path, test_hdf_path]):
         if os.path.exists(path):
             os.remove(path)
 
-        pool = Pool(processes=12)
-        trials = [] 
+        pool = Pool(processes=n_processes)
+        trials = []
         for trial_i, trial in enumerate(pool.imap_unordered(simulate_trial, tqdm(cond, total=len(cond)))):
             trials.append(trial)
 
         for trial_i, trial in enumerate(trials):
-            trial.to_hdf(path_or_buf=path, key="trial_"+str(trial_i))
+            trial.to_hdf(path_or_buf=path, key=trial_hdf_key_prefix+str(trial_i))
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n_simulations_train', type=int, default=3500)
+    parser.add_argument('--n_simulations_val', type=int, default=1000)
+    parser.add_argument('--n_simulations_test', type=int, default=1000)
+
+    parser.add_argument('--train_size', type=float, default=0.7)
+    parser.add_argument('--val_size', type=float, default=0.15)
+    parser.add_argument('--test_size', type=float, default=0.15)
+
+    parser.add_argument('--train_hdf_path', type=str, default="train_passive_trials.h5")
+    parser.add_argument('--val_hdf_path', type=str, default="val_passive_trials.h5")
+    parser.add_argument('--test_hdf_path', type=str, default="test_passive_trials.h5")
+
+    parser.add_argument('--n_processes', type=int, default=12)
+
+    parser.add_argument('--trial_hdf_key_prefix', type=str, default="trial_")
+
+    args = parser.parse_args()
+    create_passive_datasets_for_training(**vars(args))
