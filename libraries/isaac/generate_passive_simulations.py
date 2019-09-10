@@ -6,8 +6,16 @@ import pandas as pd
 import os
 from multiprocessing import Pool
 from sklearn.model_selection import train_test_split
+from simulator.config import generate_possible
+
 
 def get_mass_answer(masses):
+    """Returns a string-based answer given a configuration of masses.
+    Args:
+        masses: a 1D vector (len(masses) >= 2)
+    Returns:
+        answer: 'A' if the first mass is larger than the second, 'B' if the second is larger and
+        'same' otherwise."""
     if masses[0] > masses[1]:
         return 'A'
     elif masses[1] > masses[0]:
@@ -16,6 +24,12 @@ def get_mass_answer(masses):
 
 
 def get_force_answer(forces):
+    """Returns a string-based answer given a configuration of forces.
+    Args:
+        forces: a square matrix >= 2x2
+    Returns:
+        answer: 'attract' if the force between the first and second puck is positive, 'repel' if it
+         is negative and 'none' otherwise."""
     if forces[0][1] > 0:
         return "attract"
     elif forces[0][1] < 0:
@@ -24,6 +38,12 @@ def get_force_answer(forces):
 
 
 def get_force_answer_from_flat_list(forces):
+    """Returns a string-based answer given a configuration of forces.
+    Args:
+        forces: a vector corresponding to the non-diagonal values of the force configuration.
+    Returns:
+        answer: 'attract' if the force between the first and second puck is positive, 'repel' if it
+         is negative and 'none' otherwise."""
     if forces[0] > 0:
         return "attract"
     elif forces[0] < 0:
@@ -32,6 +52,13 @@ def get_force_answer_from_flat_list(forces):
 
 
 def simulate_trial(trial):
+    """Simulates a trial in the passive condition (i.e. without mouse interaction.
+    Args:
+        trial: the world configuration.
+    Returns:
+        trial_data: the simulator data after simulating the configuration.
+    """
+
     new_env = physic_env([trial], None, None, init_mouse, T, ig_mode=0, prior=None, reward_stop=None)
 
     mass_answer = get_mass_answer(new_env.cond['mass'])
