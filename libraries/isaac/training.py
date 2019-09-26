@@ -73,6 +73,19 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
 
 
 def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=None, step_size=None):
+    """Evaluates a model given a validation set.
+    Args:
+        model: the trained neural network to be evaluated.
+        val_loader: the validation dataset. Must be 3D (batch, sequence, features).
+        return_predicted: (bool) If True, both accuracy and predictions will be returned.
+        seq_start: (int) index at which the sequence to be fed starts.
+        seq_end: (int) index at which the sequence to be fed ends.
+        step_size: (int) step to be applied to the sequence to be fed.
+    Returns:
+        accuracy: (float) the percentage of accuracy achieved by the model out of 100.
+        predicted: (list) if return_predicted is True, the model class predictions will be returned.
+    """
+
     predicted = []
     correct = 0
     total = 0
