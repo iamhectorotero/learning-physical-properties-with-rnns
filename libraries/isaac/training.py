@@ -106,9 +106,33 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
     return accuracy
 
 
-def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None, 
+def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None,
                          seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False,
                          categorical_columns=(), normalisation_cols=(), save_plot_path=None, device=torch.device("cpu")):
+    """Loads a trained model and evaluates it in a given dataset.
+    Args:
+        model_path: path to the saved model.
+        network_dims: network parameters that will be passed to the network architecture.
+        test_dataset_path: path to the dataset the model will be evaluated on.
+        training_columns: columns in the dataset that will be used as features.
+        class_columns: columns in the dataset that will be interpreted as the class.
+        seq_start, seq_end, step_size: (integers) where the sequence starts and ends and the step
+                                       to be applied to it.
+        scaler_path: path to the saved scaler used to normalise the data. If None, the data won't
+                     be normalised.
+        trials: Alternatively to passing the test_dataset_path, the model can be evaluated on a set
+                of already loaded trials. If both test_dataset_path and trials are not None, trials
+                will be used.
+        arch: model architecture.
+        multiclass: argument to read_dataset. If True, indicates a multibranch network is used and
+                    thus class_columns is a list of size (number_of_branches, number_of_columns_per_class)
+        categorical_columns: argument to read_dataset. Indicates which columns mustn't be normalised.
+        normalisation_cols: argument to read_dataset. Indicates which columns must be normalised.
+        save_plot_path: If not None, the confusion matrix will be saved to this path. 
+        device: (torch.device) both model and dataset will be loaded to this device.
+
+    Returns:
+        ax: the matplotlib axis from the confusion matrix plot."""
 
     class_columns = list(class_columns)
     training_columns = list(training_columns)
@@ -119,32 +143,29 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
     else:
         scaler = None
         normalise_data=False
-        
+
     model = arch(*network_dims)
     model.load_state_dict(torch.load(model_path))
     model.eval()
     model = model.to(device=device)
-    
+
     if trials is None:
         trials = read_dataset(test_dataset_path)
-        
-    test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=normalise_data, 
+
+    test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=normalise_data,
                                      scaler=scaler, training_columns=training_columns, multiclass=multiclass,
                                      categorical_columns=categorical_columns, normalisation_cols=normalisation_cols,
                                      device=device)
 
     accuracy, predicted = evaluate(model, test_loader, return_predicted=True, seq_start=seq_start, step_size=step_size, seq_end=seq_end)
-    
+
     print("Model's accuracy on test set:", accuracy)
-    
+
     predicted = [pred.cpu() for pred in predicted]
     Y_test = np.concatenate([y.cpu().numpy() for x, y in test_loader])
-    
-    # plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=False)
-    # if len(save_plot_paths) > 0:
-    #    matplotlib2tikz.save(save_plot_paths[0])
+
     ax = plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
     if save_plot_path:
         plt.savefig(save_plot_path)
-        
+
     return ax
