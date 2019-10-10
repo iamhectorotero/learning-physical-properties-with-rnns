@@ -12,8 +12,25 @@ import matplotlib.pyplot as plt
 
 def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=200, print_stats_per_epoch=True,
                   seq_start=None, seq_end=None, step_size=None, patience=np.inf):
-    """Trains a model for <num_epochs> to minimize the <error> using the <optimizer>.
-    Returns a list of epoch losses (averaged over batches) as well as validation accuracy"""
+    """Trains a model to minimize the error on the training set during the specified set of epochs.
+    The model is evaluated on the validation set after every epoch and the model with the best
+    validation accuracy is returned.
+    Args:
+        model: the neural network to be fitted.
+        optimizer: the training optimizer (e.g. Adam).
+        error: the error to be minimised when fitting the network.
+        train_loader: the training dataset (a 3D PyTorch DatasetLoader).
+        val_loader: the validation dataset (a 3D PyTorch DatasetLoader).
+        num_epochs: the number of epochs the model will be trained.
+        print_stats_per_epoch: whether to print accuracy and loss statistics after every epoch.
+        seq_start, seq_end, step_size: the start, end and step applied to each example's sequence.
+        patience: the number of epochs without validation accuracy improvement after which the
+        training will stop. Defaults to infinity.
+    Returns:
+        epoch_losses: the model's losses on the training dataset after every epoch.
+        epoch_accuracies: (2D list) the model's accuracy on the training and validation dataset.
+        best_model: the model with the best validation accuracy.
+    """
 
     best_model, best_val_accuracy = None, 0
     epoch_losses = []
@@ -38,7 +55,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
             epochs_without_improvement += 1
             if epochs_without_improvement > patience:
                 break
-            
+
         if print_stats_per_epoch:
             if len(epoch_losses) == 0:
                 this_epoch_loss = -1.
@@ -47,7 +64,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
             pbar.set_description("Train_loss (%.2f)\t Train_acc (%.2f)\t Val_acc (%.2f)" % (this_epoch_loss, train_accuracy, val_accuracy))
 
         model.train()
-        
+
         epoch_loss = 0
 
         for x, y in train_loader:
@@ -68,7 +85,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
             epoch_loss += loss.item()
 
         epoch_losses.append(epoch_loss / len(train_loader))
-        
+
     return epoch_losses, epoch_accuracies, best_model
 
 
