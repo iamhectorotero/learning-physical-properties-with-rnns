@@ -100,23 +100,35 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
         predicted: (list) if return_predicted is True, the model class predictions will be returned.
     """
 
-    predicted = []
-    correct = 0
     total = 0
-    for x_val, y_val in val_loader:
+
+    for i, (x_val, y_val) in enumerate(val_loader):
+
         x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
         y_hat = model(x_val)
 
-        current_prediction = torch.max(y_hat.data, 1)[1]
-        total += y_val.size(0)
-        correct += (current_prediction == y_val).sum().cpu().numpy()
-        
-        predicted.extend(current_prediction)
+        # If y_hat is a tuple, the model is multibranch so the branch predictions will be stacked.
+        if isinstance(y_hat, tuple):
+            y_hat = torch.stack(y_hat, dim=2)
 
-        
-    accuracy = 100 * correct / float(total)
+        current_predictions = torch.max(y_hat.data, dim=1)[1]
+        correct = (current_predictions == y_val).sum(dim=0)
+
+        if i == 0:
+            all_predictions = current_predictions
+            all_correct = correct
+        else:
+            all_predictions = torch.cat([all_predictions, current_predictions], dim=0)
+            all_correct += correct
+
+        total += y_val.size(0)
+
+
+    accuracy = 100 * all_correct.cpu().numpy() / float(total)
+
     if return_predicted:
-        return accuracy, predicted
+        return accuracy, all_predictions
+
     return accuracy
 
 

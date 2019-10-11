@@ -15,15 +15,19 @@ from torch.nn import CrossEntropyLoss
 from copy import deepcopy
 
 from isaac import training
-from isaac.models import initialise_model, ComplexRNNModel
+from isaac.models import initialise_model, ComplexRNNModel, MultiBranchModel
 from isaac.dataset import normalise
 
 class TestEvaluate(unittest.TestCase):
     @staticmethod
-    def create_loader(n_features, n_classes, n_examples=10, seq_length=100):
+    def create_loader(n_features, n_classes, n_examples=10, seq_length=100, multibranch=False):
 
         X = np.random.rand(n_examples, seq_length, n_features).astype('f')
-        Y = np.random.randint(low=0, high=n_classes, size=n_examples)
+
+        if multibranch:
+            Y = np.random.randint(low=0, high=n_classes, size=(n_examples, 2))
+        else:
+            Y = np.random.randint(low=0, high=n_classes, size=n_examples)
 
         X = torch.from_numpy(X)
         Y = torch.from_numpy(Y)
@@ -42,8 +46,26 @@ class TestEvaluate(unittest.TestCase):
         return model
 
     @staticmethod
+    def create_multibranch_model(n_features, n_classes):
+        hidden_dim = 5
+        network_params = (n_features, hidden_dim, n_classes)
+        model, _, _ = initialise_model(network_params, arch=MultiBranchModel)
+        return model
+
+    @staticmethod
     def is_accuracy_well_calculated(accuracy, val_loader, predicted):
         classes = np.concatenate([y.numpy() for _, y in val_loader])
+
+        correct = 0
+        for y_pred, y_true in zip(predicted, classes):
+            correct += int(y_pred == y_true)
+        calculated_accuracy = 100 * correct / float(len(classes))
+
+        return np.isclose(accuracy, calculated_accuracy)
+
+    @staticmethod
+    def is_accuracy_well_calculated_for_multibranch(accuracy, val_loader, predicted, branch_id):
+        classes = np.concatenate([y.numpy()[:, branch_id] for _, y in val_loader])
 
         correct = 0
         for y_pred, y_true in zip(predicted, classes):
@@ -67,6 +89,27 @@ class TestEvaluate(unittest.TestCase):
 
         self.assertEqual(len(predicted), n_examples)
         self.assertTrue(self.is_accuracy_well_calculated(accuracy, val_loader, predicted))
+
+    def test_accuracy_is_correct_for_multibranch_dataset(self):
+        n_features = 10
+        n_classes = 3
+        n_examples = 10
+        seq_start, seq_end, step_size = None, None, None
+
+        val_loader = self.create_loader(n_features, n_classes, n_examples, multibranch=True)
+        model = self.create_multibranch_model(n_features, n_classes)
+
+        return_predicted = True
+        accuracy, predicted = training.evaluate(model, val_loader, return_predicted,
+                                                seq_start, seq_end, step_size)
+
+        # 2 prediction lists, one per branch
+        self.assertTupleEqual(tuple(predicted.shape), (n_examples, 2))
+        # 2 accuracies, one per branch
+        self.assertTrue(self.is_accuracy_well_calculated_for_multibranch(accuracy[0], val_loader,
+                                                                         predicted[:, 0], 0))
+        self.assertTrue(self.is_accuracy_well_calculated_for_multibranch(accuracy[1], val_loader,
+                                                                         predicted[:, 1], 1))
 
     def test_perfect_accuracy(self):
         n_features = 10
