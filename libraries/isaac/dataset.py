@@ -11,15 +11,18 @@ from tqdm import tqdm
 
 from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
 
-def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True):
-    """Reads a local hdf/h5 file consisting of one or more DataFrames.
+def read_dataset(path, n_trials=None, shuffle=False, seed=0, cols=None, add_class_columns=True):
+    """Reads a local hdf/h5 file consisting of one or more DataFrames whose keys are of the form
+    trial_X where X is a number.
+
     Args:
         path: the file path.
         n_trials: The number of DataFrames to be read. If larger than the total number of DataFrames
         stored, it will default to this value. If lower, a random subset will be sampled.
-        seed: a seed for Numpy to control in which order DataFrames are read.
+        shuffle: (boolean) whether to read the trials in order or shuffle them.
+        seed: a seed for Numpy to control in which order DataFrames are read. If shuffle is False,
+        this argument will be ignored.
         cols: if specified, only these columns  will be read from the DataFrames. If duplicated, they will only be read once.
-
         add_class_columns: (default True) class columns (see constants MASS_CLASS_COLS and FORCE_CLASS_COLS) will be added to the list of cols (if those are specified).
     Returns:
         dataset: a list of Pandas DataFrames. One per HDF key found in the file path.
@@ -29,13 +32,18 @@ def read_dataset(path, n_trials=None, seed=0, cols=None, add_class_columns=True)
 
     with pd.HDFStore(path, mode="r") as hdf:
         keys = dir(hdf.root)[124:]
-        keys = sorted(keys)
+
+        get_trial_id = lambda x: int(x.split("_")[1])
+        keys = sorted(keys, key=get_trial_id)
 
         if n_trials is None or n_trials > len(keys):
             n_trials = len(keys)
-        
-        trials = np.random.choice(keys, size=n_trials, replace=False)
-        
+
+        if shuffle:
+            trials = np.random.choice(keys, size=n_trials, replace=False)
+        else:
+            trials = keys[:n_trials]
+
         if cols is not None:
             cols = list(cols)
             if add_class_columns:

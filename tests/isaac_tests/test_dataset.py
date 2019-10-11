@@ -151,8 +151,8 @@ class TestReadDataset(unittest.TestCase):
         dfs = [pd.DataFrame(np.random.rand(10, len(cols)), columns=cols) for _ in range(n_trials)]
         self.write_dataframes_to_file(dfs, self.hdf_path)
 
-        first_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, seed=90)
-        second_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, seed=90)
+        first_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, n_trials=4, seed=90)
+        second_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, n_trials=4, seed=90)
 
         for df1, df2 in zip(first_dataset, second_dataset):
             pd.testing.assert_frame_equal(df1, df2)
@@ -164,8 +164,8 @@ class TestReadDataset(unittest.TestCase):
         dfs = [pd.DataFrame(np.random.rand(10, len(cols)), columns=cols) for _ in range(n_trials)]
         self.write_dataframes_to_file(dfs, self.hdf_path)
 
-        first_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, seed=90)
-        second_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, seed=0)
+        first_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, n_trials=4, seed=90)
+        second_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, n_trials=4, seed=0)
 
         different_order = False
         for df1, df2 in zip(first_dataset, second_dataset):
@@ -182,8 +182,8 @@ class TestReadDataset(unittest.TestCase):
         dfs = [pd.DataFrame(np.random.rand(10, len(cols)), columns=cols) for _ in range(n_trials)]
         self.write_dataframes_to_file(dfs, self.hdf_path)
 
-        first_dataset = dataset.read_dataset(self.hdf_path, seed=90)
-        second_dataset = dataset.read_dataset(self.hdf_path, seed=0)
+        first_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, seed=90)
+        second_dataset = dataset.read_dataset(self.hdf_path, shuffle=True, seed=0)
 
         different_order = False
         for df1, df2 in zip(first_dataset, second_dataset):
@@ -192,6 +192,37 @@ class TestReadDataset(unittest.TestCase):
                 break
 
         self.assertTrue(different_order)
+
+
+    def test_reading_subset_of_trials_with_different_seeds_but_without_shuffle(self):
+        n_trials = 25
+        cols = ["col_"+str(i) for i in range(4)]
+
+        dfs = [pd.DataFrame(np.random.rand(10, len(cols)), columns=cols) for _ in range(n_trials)]
+        self.write_dataframes_to_file(dfs, self.hdf_path)
+
+        # Specifying shuffle=False (or not specifying at all) should make the method ignore
+        # the seed argument
+        first_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, shuffle=False, seed=90)
+        second_dataset = dataset.read_dataset(self.hdf_path, n_trials=4, shuffle=False, seed=0)
+
+        for df1, df2 in zip(first_dataset, second_dataset):
+            pd.testing.assert_frame_equal(df1, df2)
+
+    def test_reading_all_trials_with_different_seeds_but_without_shuffle(self):
+        n_trials = 25
+        cols = ["col_"+str(i) for i in range(4)]
+
+        dfs = [pd.DataFrame(np.random.rand(10, len(cols)), columns=cols) for _ in range(n_trials)]
+        self.write_dataframes_to_file(dfs, self.hdf_path)
+
+        # Specifying shuffle=False (or not specifying at all) should make the method ignore
+        # the seed argument
+        first_dataset = dataset.read_dataset(self.hdf_path, shuffle=False, seed=90)
+        second_dataset = dataset.read_dataset(self.hdf_path, shuffle=False, seed=0)
+
+        for df1, df2 in zip(first_dataset, second_dataset):
+            pd.testing.assert_frame_equal(df1, df2)
 
 
 class TestNormalise(unittest.TestCase):
