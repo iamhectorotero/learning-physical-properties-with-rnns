@@ -13,14 +13,36 @@ class TestInitialiseModel(unittest.TestCase):
 
     network_params = (input_size, hidden_dim, n_layers, output_dim, dropout)
 
-    def test_for_model_params(self):
+    def test_for_model_params_for_default_architecture(self):
         model, _, _ = models.initialise_model(self.network_params)
 
         self.assertEqual(model.rec_layer.input_size, self.input_size)
         self.assertEqual(model.rec_layer.hidden_size, self.hidden_dim)
         self.assertEqual(model.rec_layer.num_layers, self.n_layers)
+        self.assertEqual(model.fc.in_features, self.hidden_dim)
         self.assertEqual(model.fc.out_features, self.output_dim)
         self.assertEqual(model.rec_layer.dropout, self.dropout)
+
+    def test_for_model_params_for_multibranch_architecture(self):
+        network_params = (self.input_size, self.hidden_dim, self.output_dim, self.dropout)
+        model, _, _ = models.initialise_model(network_params, arch=models.MultiBranchModel)
+
+        self.assertEqual(model.base_gru.input_size, self.input_size)
+        self.assertEqual(model.base_gru.hidden_size, self.hidden_dim)
+
+        self.assertEqual(model.gru1.input_size, self.hidden_dim)
+        self.assertEqual(model.gru1.hidden_size, self.hidden_dim)
+        self.assertEqual(model.gru2.input_size, self.hidden_dim)
+        self.assertEqual(model.gru2.hidden_size, self.hidden_dim)
+
+        self.assertEqual(model.fc1.in_features, self.hidden_dim)
+        self.assertEqual(model.fc1.out_features, self.output_dim)
+        self.assertEqual(model.fc2.in_features, self.hidden_dim)
+        self.assertEqual(model.fc2.out_features, self.output_dim)
+
+        self.assertEqual(model.base_gru.dropout, self.dropout)
+        self.assertEqual(model.gru1.dropout, self.dropout)
+        self.assertEqual(model.gru2.dropout, self.dropout)
 
     def test_for_lr(self):
         lr = 0.0001
@@ -47,16 +69,10 @@ class TestInitialiseModel(unittest.TestCase):
         self.assertTrue(isinstance(model, models.ComplexRNNModel))
 
     def test_alternative_architecture(self):
-        class AlternativeArch(torch.nn.Module):
-            def __init__(self, cell_type):
-                super(AlternativeArch, self).__init__()
-                self.rec_layer = cell_type(2, 2, 2, False)
-            def forward(self, x):
-                return self.rec_layer(x)[0]
+        network_params = (self.input_size, self.hidden_dim, self.output_dim, self.dropout)
 
-        network_params = []
-        model, _, _ = models.initialise_model(network_params, arch=AlternativeArch)
-        self.assertTrue(isinstance(model, AlternativeArch))
+        model, _, _ = models.initialise_model(network_params, arch=models.MultiBranchModel)
+        self.assertTrue(isinstance(model, models.MultiBranchModel))
 
     def test_for_cell_type(self):
         model, _, _ = models.initialise_model(self.network_params)
@@ -87,6 +103,18 @@ class TestInitialiseModel(unittest.TestCase):
         output = model(input_tensor)
 
         self.assertListEqual(list(output.shape), expected_output_shape)
+
+    def test_model_forward_output_for_multibranch_arch(self):
+        network_params = (self.input_size, self.hidden_dim, self.output_dim, self.dropout)
+        model, _, _ = models.initialise_model(network_params, arch=models.MultiBranchModel)
+
+        input_tensor = torch.arange(10 * 8 * 2, dtype=torch.float).view(10, 8, 2)
+        expected_output_shape = [10, 5]
+        first_output, second_output = model(input_tensor)
+
+        self.assertListEqual(list(first_output.shape), expected_output_shape)
+        self.assertListEqual(list(second_output.shape), expected_output_shape)
+
 
 if __name__ == "__main__":
     unittest.main()

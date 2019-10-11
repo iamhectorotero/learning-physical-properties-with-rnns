@@ -15,6 +15,32 @@ class ComplexRNNModel(nn.Module):
         return out
 
 
+class MultiBranchModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, dropout=0.5, cell_type=nn.GRU):
+        super(MultiBranchModel, self).__init__()
+
+        self.layers_per_section = 2
+
+        self.base_gru = cell_type(input_dim, hidden_dim, self.layers_per_section, batch_first=True, dropout=dropout)
+
+        self.gru1 = cell_type(hidden_dim, hidden_dim, self.layers_per_section, batch_first=True, dropout=dropout)
+        self.gru2 = cell_type(hidden_dim, hidden_dim, self.layers_per_section, batch_first=True, dropout=dropout)
+
+        self.fc1 = nn.Linear(hidden_dim, output_dim)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        out, _ = self.base_gru(x)
+
+        out_1, _ = self.gru1(out)
+        out_1 = self.fc1(out_1[:, -1, :])
+
+        out_2, _ = self.gru2(out)
+        out_2 = self.fc2(out_2[:, -1, :])
+
+        return out_1, out_2
+
+
 def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU,
                      device=torch.device("cpu")):
     """Initialises a model, error and optimizer with the specified parameters.
