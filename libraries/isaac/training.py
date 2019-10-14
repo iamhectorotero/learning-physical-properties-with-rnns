@@ -171,9 +171,8 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
         normalise_data=False
 
     model = arch(*network_dims)
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
-    model = model.to(device=device)
 
     if trials is None:
         trials = read_dataset(test_dataset_path)
