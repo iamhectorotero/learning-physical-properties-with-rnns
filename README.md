@@ -1,5 +1,64 @@
 # diss
 
+Human beings possess an intuitive understanding of physics that allows us to infer properties of objects, such as their elasticity, or make accurate predictions regarding their trajectories if they are moving. We can, for example, predict that an object will fall just by (passively) **observing** its shape and how it's standing on a table. We can also learn properties hidden to passive observation, like mass, by **actively** interacting with said objects. We will, for example, shake a present to try to guess its content or pass a ball from hand to hand to guess its weight. 
+
+'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties (See Replays A and B). Their results show the difficulty of correctly guessing properties such as mass or attraction/repulsion forces from observation and the advantages that interacting with the environment can provide. 
+
+During my MSc Dissertation I tackled the same task presented in the paper with Recurrent Neural Networks. My goal: developing RNNs capable of guessing physical properties with human accuracy. Firstly, I modelled the problem as a supervised learning problem to match the condition in which the participants were only allowed to observe the environment and **matched** their accuracy! (WOOHOO!). After those results were achieved, I developed Reinforcement Learning agents capable of interacting with the environment and tasked with also answering the questions. Although the results didn't improve the accuracy from passive observation, they are a stepping stone towards developing RL agents capable of actively learning. 
+
+As a results, this repository contains the code developed and experiments run during my (Héctor Otero Mediero's) MSc Dissertation in the University of Edinburgh (MSc in Artificial Intelligence). 
+
+# THE ENVIRONMENT AND TASK
+We are presented with an environment that includes four pucks that move according to Newtonian physics. We are tasked with answering questions regarding the **target pucks** (labelled A and B). The remaining distractor pucks (painted blue) are there just to complicate the task (they can attract/repel the target pucks and provoke collisions).
+
+Two types of questions are asked:
+
+- Which puck is heavier? 'A', 'B' or do they weigh the 'same'?
+- Do the pucks 'attract', 'repel' or 'no force' acts between them?
+
+Three different conditions are evaluated:
+
+- Passive: the participant watches a replay in which the pucks move freely with no outside intervention. (See Replay A)
+- Active: the participant is allowed to interact with the pucks, dragging, launching, etc as they please. (See Replay B)
+- Yoked: the participant watches a replay of another participant's actively interacting with the environment. 
+
+### Replay A:
+A passive simulation in which the target pucks **attract** each other and weigh the same.
+![Alt Text](passive_trial.gif)
+
+### Replay B:
+Same environment as in Replay A, but this time the participant is allowed to drag the pucks around. 
+![Alt Text](active_trial.gif)
+
+
+## LIBRARIES
+
+- `simulator`: includes the code necessary to generate the physical environment and generate passive trials or run active simulations.  Its main configuration can be checked in `environment.py`.
+- `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`.
+- `toddler`: library to train and test Reinforcement Learning agents. Includes code for training RDQN (Recurrent Deep Recurrent Q-learning) agents.
+
+
+## NOTEBOOKS
+### diss_results
+Notebooks spawning from the experiments performed during my Master's dissertation and their corresponding visualization. These include:
+##### Passive
+- RNN cell type selection. (Notebooks 0 and 0b).
+- Feature selection (Notebooks 1a, 1b, 1c).
+- Sequence length selection. (Notebooks 2 and 2b).
+- Sequence resolution selection (Notebooks 3 and 3b).
+- Long training processes (Notebooks 4, 4b, 4c, 6, 6b, 6c).
+- Transfer learning experiments (Notebooks 5 and 5b).
+- Multi-branch neural network experiments. (Notebooks 6, 6b, 6c, 8, 9, 9b, 10, 10b, 11 and 11b).
+- Evaluation of passive models on yoked data. (Notebook 8).
+- Training of models on yoked data. (Notebooks 9, 9b, 10, 10b, 11 and 11b).
+##### Active
+- Learning to grab a puck with Reinforcement Learning. (Notebooks 13 (3 of them)).
+- Learning to answer questions with Reinforcement Learning (Notebooks 14 (3 of them)).
+- Mixed approach: control the mouse through RL and delegate the answering to a supervised learning agent. (Notebooks 15 (3 of them)).
+### statistical_analysis
+- Creating a dataset from human data belonging to [Intuitive experimentation in the physical world [Bramley et al. 2018]](https://doi.org/10.1016/j.cogpsych.2018.05.001). 
+- Diverse statistical comparisons between the results from human and RNN models. 
+
 ## INSTALLATION GUIDE
 
 To run the notebooks and/or libraries in this repository, it is necessary to install some dependencies.
@@ -21,3 +80,8 @@ To remove the environment and all its installed libraries execute:
 conda deactivate
 conda remove -y --name diss --all
 ```
+
+# REFERENCES
+Bramley, N. R., Gerstenberg, T., Tenenbaum, J. B., & Gureckis, T. M. (2018). Intuitive experimentation in the physical world. Cognitive Psychology, 105, 9–38. https://doi.org/10.1016/j.cogpsych.2018.05.001
+
+
