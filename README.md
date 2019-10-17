@@ -1,12 +1,19 @@
 # diss
 
-Human beings possess an intuitive understanding of physics that allows us to infer properties of objects, such as their elasticity, or make accurate predictions regarding their trajectories if they are moving. We can, for example, predict that an object will fall just by (passively) **observing** its shape and how it's standing on a table. We can also learn properties hidden to passive observation, like mass, by **actively** interacting with said objects. We will, for example, shake a present to try to guess its content or pass a ball from hand to hand to guess its weight. 
 
-'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties (See Replays A and B). Their results show the difficulty of correctly guessing properties such as mass or attraction/repulsion forces from observation and the advantages that interacting with the environment can provide. 
+Human beings possess an innate understanding of physics. We can, for example, predict that an object will fall just by **observing** how it's standing on a table or learn a ball's weight by passing it from hand to hand. 'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties (See below).  
 
-During my MSc Dissertation I tackled the same task presented in the paper with Recurrent Neural Networks. My goal: developing RNNs capable of guessing physical properties with human accuracy. Firstly, I modelled the problem as a supervised learning problem to match the condition in which the participants were only allowed to observe the environment and **matched** their accuracy! (WOOHOO!). After those results were achieved, I developed Reinforcement Learning agents capable of interacting with the environment and tasked with also answering the questions. Although the results didn't improve the accuracy from passive observation, they are a stepping stone towards developing RL agents capable of actively learning. 
+![Alt Text](passive_trial.gif)
 
-As a results, this repository contains the code developed and experiments run during my (Héctor Otero Mediero's) MSc Dissertation in the University of Edinburgh (MSc in Artificial Intelligence). 
+During my MSc Dissertation I tackled the same task presented in the paper with Recurrent Neural Networks. My goal: developing RNNs capable of guessing physical properties with human accuracy. Firstly, I modelled the problem as a supervised learning problem to match the condition in which the participants are only allowed to observe the environment and **matched** their accuracy! (WOOHOO!). After, I developed Reinforcement Learning agents capable of interacting with the environment and tasked with also answering the questions. Although the results didn't improve the accuracy from passive observation, they are a stepping stone towards developing RL agents capable of actively learning. As a result, this repository contains the code developed and experiments run during my (Héctor Otero Mediero's) MSc Dissertation in the University of Edinburgh (MSc in Artificial Intelligence). 
+
+# Table of contents
+1. [The environment and task](#the-environment-and-task)
+2. [Libraries](##libraries)
+3. [Notebooks](##notebooks)
+4. [Installation Guide](##installation-guide)
+5. [References](#references)
+
 
 # THE ENVIRONMENT AND TASK
 We are presented with an environment that includes four pucks that move according to Newtonian physics. We are tasked with answering questions regarding the **target pucks** (labelled A and B). The remaining distractor pucks (painted blue) are there just to complicate the task (they can attract/repel the target pucks and provoke collisions).
@@ -22,13 +29,8 @@ Three different conditions are evaluated:
 - Active: the participant is allowed to interact with the pucks, dragging, launching, etc as they please. (See Replay B)
 - Yoked: the participant watches a replay of another participant's actively interacting with the environment. 
 
-### Replay A:
-A passive simulation in which the target pucks **attract** each other and weigh the same.
-![Alt Text](passive_trial.gif)
-
-### Replay B:
-Same environment as in Replay A, but this time the participant is allowed to drag the pucks around. 
 ![Alt Text](active_trial.gif)
+Same environment as in Replay A, but this time the participant is allowed to drag the pucks around. 
 
 
 ## LIBRARIES
