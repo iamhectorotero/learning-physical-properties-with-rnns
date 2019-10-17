@@ -3,7 +3,7 @@
 
 Human beings possess an innate understanding of physics. We can, for example, predict that an object will fall just by **observing** how it's standing on a table or learn a ball's weight by passing it from hand to hand. 'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties (See below).  
 
-![Alt Text](passive_trial.gif)
+![A passive trial](passive_trial.gif)
 
 During my MSc Dissertation I tackled the same task presented in the paper with Recurrent Neural Networks. My goal: developing RNNs capable of guessing physical properties with human accuracy. Firstly, I modelled the problem as a supervised learning problem to match the condition in which the participants are only allowed to observe the environment and **matched** their accuracy! (WOOHOO!). After, I developed Reinforcement Learning agents capable of interacting with the environment and tasked with also answering the questions. Although the results didn't improve the accuracy from passive observation, they are a stepping stone towards developing RL agents capable of actively learning. As a result, this repository contains the code developed and experiments run during my (Héctor Otero Mediero's) MSc Dissertation in the University of Edinburgh (MSc in Artificial Intelligence). 
 
@@ -29,8 +29,8 @@ Three different conditions are evaluated:
 - Active: the participant is allowed to interact with the pucks, dragging, launching, etc as they please. (See Replay B)
 - Yoked: the participant watches a replay of another participant's actively interacting with the environment. 
 
-![Alt Text](active_trial.gif)
-Same environment as in Replay A, but this time the participant is allowed to drag the pucks around. 
+![An active trial](active_trial.gif)
+*Same environment as in Replay A, but this time the participant is allowed to drag the pucks around.*
 
 
 ## LIBRARIES
