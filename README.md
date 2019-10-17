@@ -84,7 +84,7 @@ conda deactivate
 conda remove -y --name diss --all
 ```
 
-# REFERENCES
+# References
 Bramley, N. R., Gerstenberg, T., Tenenbaum, J. B., & Gureckis, T. M. (2018). Intuitive experimentation in the physical world. Cognitive Psychology, 105, 9–38. https://doi.org/10.1016/j.cogpsych.2018.05.001
 
 
