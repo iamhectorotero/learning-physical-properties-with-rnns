@@ -1,7 +1,7 @@
 # diss
 
 
-Human beings possess an innate understanding of physics. We can, for example, predict that an object will fall just by **observing** how it's standing on a table or learn a ball's weight by passing it from hand to hand. 'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties (See below).  
+Human beings possess an innate understanding of physics. We can, for example, predict that an object will fall just by **observing** how it's standing on a table or learn a ball's weight by passing it from hand to hand. 'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties. Using the environment shown below, participants were tasked with guessing the mass of the labelled pucks and the attraction or repulsion forces acting between them.  
 
 ![A passive trial](passive_trial.gif)
 
@@ -15,7 +15,7 @@ During my MSc Dissertation I tackled the same task presented in the paper with R
 5. [References](#references)
 
 
-# THE ENVIRONMENT AND TASK
+# The environment and task
 We are presented with an environment that includes four pucks that move according to Newtonian physics. We are tasked with answering questions regarding the **target pucks** (labelled A and B). The remaining distractor pucks (painted blue) are there just to complicate the task (they can attract/repel the target pucks and provoke collisions).
 
 Two types of questions are asked:
@@ -34,14 +34,14 @@ Three different conditions are evaluated:
 *Same environment as in Replay A, but this time the participant is allowed to drag the pucks around.*
 
 
-# LIBRARIES
+# Libraries
 
 - `simulator`: includes the code necessary to generate the physical environment and generate passive trials or run active simulations.  Its main configuration can be checked in `environment.py`.
 - `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`.
 - `toddler`: library to train and test Reinforcement Learning agents. Includes code for training RDQN (Recurrent Deep Recurrent Q-learning) agents.
 
 
-# NOTEBOOKS
+# Notebooks
 ### diss_results
 Notebooks spawning from the experiments performed during my Master's dissertation and their corresponding visualization. These include:
 ##### Passive
@@ -62,7 +62,7 @@ Notebooks spawning from the experiments performed during my Master's dissertatio
 - Creating a dataset from human data belonging to [Intuitive experimentation in the physical world [Bramley et al. 2018]](https://doi.org/10.1016/j.cogpsych.2018.05.001). 
 - Diverse statistical comparisons between the results from human and RNN models. 
 
-# INSTALLATION GUIDE
+# Installation guide
 
 To run the notebooks and/or libraries in this repository, it is necessary to install some dependencies.
 The file `conda_environment.yml` lists these dependencies and can be directly used to create a
@@ -84,7 +84,7 @@ conda deactivate
 conda remove -y --name diss --all
 ```
 
-# REFERENCES
+# References
 Bramley, N. R., Gerstenberg, T., Tenenbaum, J. B., & Gureckis, T. M. (2018). Intuitive experimentation in the physical world. Cognitive Psychology, 105, 9–38. https://doi.org/10.1016/j.cogpsych.2018.05.001
 
 
