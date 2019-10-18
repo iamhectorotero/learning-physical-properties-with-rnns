@@ -15,9 +15,13 @@ def increase_linewidth(ax):
     lines = ax.get_lines()
     for line in lines:
         line.set_linewidth(3)
-    leg = ax.legend()
-    leg_lines = leg.get_lines()
-    plt.setp(leg_lines, linewidth=5)
+
+    handles, labels = ax.get_legend_handles_labels()
+    if len(labels) > 0:
+        leg = ax.legend()
+        leg_lines = leg.get_lines()
+        plt.setp(leg_lines, linewidth=5)
+
     plt.tight_layout()
 
 
