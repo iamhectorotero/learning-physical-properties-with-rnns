@@ -6,6 +6,7 @@ import joblib
 from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
 from .utils import plot_confusion_matrix
+from .constants import TQDM_DISABLE
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -37,7 +38,7 @@ def training_loop(model, optimizer, error, train_loader, val_loader, num_epochs=
     epoch_accuracies = [[],[]]
     epochs_without_improvement = 0
 
-    pbar = tqdm(range(num_epochs))
+    pbar = tqdm(range(num_epochs), disable=TQDM_DISABLE)
 
     for epoch in pbar:
 

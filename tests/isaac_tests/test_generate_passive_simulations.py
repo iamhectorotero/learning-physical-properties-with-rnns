@@ -3,6 +3,10 @@ import numpy as np
 import os
 import pandas as pd
 
+# Disable TQDM for testing
+from isaac import constants
+constants.TQDM_DISABLE = True
+
 from isaac import generate_passive_simulations as gps
 from isaac.constants import BASIC_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
 from isaac.dataset import read_dataset

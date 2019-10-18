@@ -15,3 +15,5 @@ YOKED_TRAINING_COLS = BASIC_TRAINING_COLS + MOUSE_COLS
 FORCE_CLASS_COLS = ("attract", "none", "repel")
 MASS_CLASS_COLS = ("A", "B", "same")
 S_PER_FRAME = 1./60
+
+TQDM_DISABLE = False

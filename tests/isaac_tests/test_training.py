@@ -7,13 +7,19 @@ import os
 import joblib
 import io
 import sys
+from importlib import reload
 from matplotlib.axes import Axes
+from tqdm import tqdm
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 from copy import deepcopy
+
+# Disable TQDM for testing
+from isaac import constants
+constants.TQDM_DISABLE = True
 
 from isaac import training
 from isaac.models import initialise_model, ComplexRNNModel, MultiBranchModel
@@ -744,6 +750,10 @@ class TestTrainingLoop(unittest.TestCase):
 
     @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
     def test_print_stats_per_epoch_is_true(self, mock_stderr):
+        # To test if a method prints stats in TQDM re-enable TQDM printing
+        constants.TQDM_DISABLE = False
+        reload(training)
+
         n_features = 4
         n_classes = 3
         model = self.create_model(n_features, n_classes)
@@ -771,9 +781,16 @@ class TestTrainingLoop(unittest.TestCase):
         self.assertEqual(mock_stderr.getvalue().count("Train_acc"), num_epochs + 1)
         self.assertEqual(mock_stderr.getvalue().count("Val_acc"), num_epochs + 1)
 
+        # At the end of the method testing, disable TQDM printing again
+        constants.TQDM_DISABLE = True
+        reload(training)
 
     @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
     def test_print_stats_per_epoch_is_false(self, mock_stderr):
+        # To test if a method prints stats in TQDM re-enable TQDM printing
+        constants.TQDM_DISABLE = False
+        reload(training)
+
         sys.stderr = sys.__stderr__
         n_features = 4
         n_classes = 3
@@ -801,6 +818,9 @@ class TestTrainingLoop(unittest.TestCase):
         self.assertEqual(mock_stderr.getvalue().count("Train_acc"), 0)
         self.assertEqual(mock_stderr.getvalue().count("Val_acc"), 0)
 
+        # At the end of the method testing, disable TQDM printing again
+        constants.TQDM_DISABLE = True
+        reload(training)
 
 if __name__ == "__main__":
     unittest.main()

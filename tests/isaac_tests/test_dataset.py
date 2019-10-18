@@ -8,6 +8,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
 
 from functools import reduce
+
+# Disable TQDM for testing
+from isaac import constants
+constants.TQDM_DISABLE = True
+
 from isaac import dataset
 from isaac.constants import MASS_CLASS_COLS, FORCE_CLASS_COLS
 

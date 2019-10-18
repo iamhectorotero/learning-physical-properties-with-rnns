@@ -8,6 +8,8 @@ from multiprocessing import Pool
 from sklearn.model_selection import train_test_split
 from simulator.config import generate_possible
 
+from .constants import TQDM_DISABLE
+
 
 def get_mass_answer(masses):
     """Returns a string-based answer given a configuration of masses.
@@ -215,7 +217,7 @@ def create_passive_datasets_for_training(n_simulations_train, n_simulations_val,
 
         pool = Pool(processes=n_processes)
         trials = []
-        for trial_i, trial in enumerate(pool.imap_unordered(simulate_trial, tqdm(cond, total=len(cond)))):
+        for trial_i, trial in enumerate(pool.imap_unordered(simulate_trial, tqdm(cond, total=len(cond), disable=TQDM_DISABLE))):
             trials.append(trial)
 
         for trial_i, trial in enumerate(trials):

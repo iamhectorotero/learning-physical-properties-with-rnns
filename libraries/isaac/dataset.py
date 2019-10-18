@@ -9,7 +9,8 @@ import torch
 import torch.utils.data
 from tqdm import tqdm
 
-from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS
+from .constants import BASIC_TRAINING_COLS, YOKED_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS, TQDM_DISABLE
+
 
 def read_dataset(path, n_trials=None, shuffle=False, seed=0, cols=None, add_class_columns=True):
     """Reads a local hdf/h5 file consisting of one or more DataFrames whose keys are of the form
@@ -50,9 +51,9 @@ def read_dataset(path, n_trials=None, shuffle=False, seed=0, cols=None, add_clas
                 cols += MASS_CLASS_COLS
                 cols += FORCE_CLASS_COLS
             cols = list(OrderedDict.fromkeys(cols))
-            dataset = [hdf[trial_i][cols] for trial_i in tqdm(trials)]
+            dataset = [hdf[trial_i][cols] for trial_i in tqdm(trials, disable=TQDM_DISABLE)]
         else:
-            dataset = [hdf[trial_i] for trial_i in tqdm(trials)]
+            dataset = [hdf[trial_i] for trial_i in tqdm(trials, disable=TQDM_DISABLE)]
         
     return dataset
 
@@ -132,7 +133,7 @@ def prepare_dataset(datasets, class_columns, multiclass=False, batch_size=640, n
         X = []
         Y = []
 
-        for trial in tqdm(dataset):
+        for trial in tqdm(dataset, disable=TQDM_DISABLE):
             training_cols = trial[training_columns]
             
             for t in transforms:
