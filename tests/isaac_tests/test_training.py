@@ -8,7 +8,6 @@ import joblib
 import io
 import sys
 from importlib import reload
-from matplotlib.axes import Axes
 from tqdm import tqdm
 
 from sklearn.preprocessing import StandardScaler
@@ -386,63 +385,6 @@ class TestEvaluateSavedModel(unittest.TestCase):
                                           self.training_columns, self.class_columns, trials=None)
 
 
-class TestPlotConfusionMatrixGivenPredictedAndTestLoader(unittest.TestCase):
-    model_path = "temporary_model"
-    dataset_path = "temporary_dataset.h5"
-    scaler_path = "temporary_scaler"
-    plot_path = "temporary_plot.pdf"
-
-    n_trials = 10
-    n_features = 5
-    training_columns = ["feature_" + str(i) for i in range(n_features)]
-    n_classes = 3
-    class_columns = ["class_" + str(i) for i in range(n_classes)]
-
-    hidden_dim = 5
-    n_layers = 1
-    network_params = (n_features, hidden_dim, n_layers, n_classes)
-
-    def tearDown(self):
-        for temp_file in [self.model_path, self.dataset_path, self.scaler_path, self.plot_path]:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-
-    def test_save_plot_is_none(self):
-        TestEvaluateSavedModel.create_and_save_model(self.network_params, self.model_path)
-        dataset = TestEvaluateSavedModel.create_dataset(self.n_trials, self.training_columns, self.class_columns)
-        test_loader, _ = prepare_dataset([dataset], class_columns=self.class_columns,
-                                         training_columns=self.training_columns)
-
-        TestEvaluateSavedModel.write_dataframes_to_file(dataset, self.dataset_path)
-        _, predicted = training.evaluate_saved_model(self.model_path, self.network_params,
-                                                     self.dataset_path, self.training_columns,
-                                                     self.class_columns, trials=None)
-
-        plot_path = None
-        ax = training.plot_confusion_matrix_given_predicted_and_test_loader(predicted, test_loader,
-                                                                            self.class_columns,
-                                                                            plot_path)
-
-        self.assertTrue(isinstance(ax, Axes))
-        self.assertFalse(os.path.exists(self.plot_path))
-
-    def test_save_plot_is_not_none(self):
-        TestEvaluateSavedModel.create_and_save_model(self.network_params, self.model_path)
-        dataset = TestEvaluateSavedModel.create_dataset(self.n_trials, self.training_columns, self.class_columns)
-        test_loader, _ = prepare_dataset([dataset], class_columns=self.class_columns,
-                                         training_columns=self.training_columns)
-
-        TestEvaluateSavedModel.write_dataframes_to_file(dataset, self.dataset_path)
-        _, predicted = training.evaluate_saved_model(self.model_path, self.network_params,
-                                                     self.dataset_path, self.training_columns,
-                                                     self.class_columns, trials=None)
-
-        ax = training.plot_confusion_matrix_given_predicted_and_test_loader(predicted, test_loader,
-                                                                            self.class_columns,
-                                                                            self.plot_path)
-
-        self.assertTrue(isinstance(ax, Axes))
-        self.assertTrue(os.path.exists(self.plot_path))
 
 
 class TestTrainingLoop(unittest.TestCase):

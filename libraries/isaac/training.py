@@ -5,7 +5,6 @@ from copy import deepcopy
 import joblib
 from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
-from .utils import plot_confusion_matrix
 from .constants import TQDM_DISABLE
 import numpy as np
 import matplotlib.pyplot as plt
@@ -135,7 +134,7 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
 
 def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None,
                          seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False,
-                         categorical_columns=(), normalisation_cols=(), save_plot_path=None, device=torch.device("cpu")):
+                         categorical_columns=(), normalisation_cols=(), device=torch.device("cpu"), return_test_loader=False):
     """Loads a trained model and evaluates it in a given dataset.
     Args:
         model_path: path to the saved model.
@@ -156,6 +155,7 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
         categorical_columns: argument to read_dataset. Indicates which columns mustn't be normalised.
         normalisation_cols: argument to read_dataset. Indicates which columns must be normalised.
         device: (torch.device) both model and dataset will be loaded to this device.
+        return_test_loader: (boolean) if True, returns the test loader used to evaluate the model.
 
     Returns:
         accuracy: the model's accuracy.
@@ -185,24 +185,10 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
 
     accuracy, predicted = evaluate(model, test_loader, return_predicted=True, seq_start=seq_start, step_size=step_size, seq_end=seq_end)
     print("Model's accuracy on test set:", accuracy)
+
+    if return_test_loader:
+        return accuracy, predicted, test_loader
+
     return accuracy, predicted
 
 
-def plot_confusion_matrix_given_predicted_and_test_loader(predicted, test_loader, class_columns,
-                                                          save_plot_path=None):
-    """ Plots the confusion matrix given the model's prediction and test_loader".
-    Args:
-        predicted: the model's predictions for the test_loader.
-        test_loader: the dataset's loader the model has been evaluated on.
-        class_columns: the names of the classes as they will appear in the confusion matrix.
-        save_plot_path: If not None, the confusion matrix will be saved to this path.
-    """
-
-    predicted = [pred.cpu() for pred in predicted]
-    Y_test = np.concatenate([y.cpu().numpy() for x, y in test_loader])
-
-    ax = plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
-    if save_plot_path is not None:
-        plt.savefig(save_plot_path)
-
-    return ax

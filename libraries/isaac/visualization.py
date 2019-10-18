@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 import numpy as np
 import gizeh as gz
@@ -6,6 +8,89 @@ import gizeh as gz
 import moviepy.editor as mpy
 
 from .dataset import read_dataset
+from .utils import plot_confusion_matrix
+
+
+def increase_linewidth(ax):
+    lines = ax.get_lines()
+    for line in lines:
+        line.set_linewidth(3)
+    leg = ax.legend()
+    leg_lines = leg.get_lines()
+    plt.setp(leg_lines, linewidth=5)
+    plt.tight_layout()
+
+
+def plot_lineplot_with_paper_style(save_plot_path, **lineplot_kwargs):
+    sns.set_style("whitegrid")
+    sns.set_context("paper")
+    plt.rcParams.update({'axes.labelsize': '22',
+                         'xtick.labelsize':'18',
+                         'ytick.labelsize': '18',
+                         'legend.fontsize': '18',
+                         'figure.figsize': (8, 8)})
+
+    if "ax" not in lineplot_kwargs:
+        plt.clf()
+
+    ax = sns.lineplot(**lineplot_kwargs)
+    increase_linewidth(ax)
+
+    if save_plot_path is not None:
+        plt.savefig(save_plot_path)
+    return ax
+
+
+def plot_confusion_matrix_given_predicted_and_test_loader(predicted, test_loader, class_columns,
+                                                          save_plot_path=None, multiclass_index=None):
+    """ Plots the confusion matrix given the model's prediction and test_loader".
+    Args:
+        predicted: the model's predictions for the test_loader.
+        test_loader: the dataset's loader the model has been evaluated on.
+        class_columns: the names of the classes as they will appear in the confusion matrix.
+        save_plot_path: If not None, the confusion matrix will be saved to this path.
+        multiclass_index: If not None, it indicates the position of the branch that is being
+                          evaluated. This index will be used to extract the corresponding columns
+                          from the test_loader.
+    """
+
+    sns.set_style("ticks")
+    sns.set_context("paper")
+    plt.rcParams.update({'axes.labelsize': '22',
+                         'xtick.labelsize':'18',
+                         'ytick.labelsize': '18',
+                         'legend.fontsize': '18',
+                         'figure.figsize': (8, 8),
+                         'font.size': 22})
+
+    predicted = [pred.cpu() for pred in predicted]
+
+    if multiclass_index is None:
+        Y_test = np.concatenate([y.cpu().numpy() for x, y in test_loader])
+    else:
+        Y_test = np.concatenate([y[:, multiclass_index].cpu().numpy() for x, y in test_loader])
+
+    ax = plot_confusion_matrix(Y_test, predicted, classes=class_columns, normalize=True)
+
+    if save_plot_path is not None:
+        plt.savefig(save_plot_path)
+
+    return ax
+
+
+def smooth_out_rl_stats(dataframe, columns_to_smooth, window_size=500):
+    rolling_stats = []
+
+    for seed, df in dataframe.groupby("seed"):
+        rolling_df = pd.DataFrame(columns=columns_to_smooth)
+        for column in columns_to_smooth:
+            rolling_df[column] = df[column].rolling(window=window_size).mean()
+        rolling_stats.append(rolling_df)
+    rolling_stats = pd.concat(rolling_stats)
+
+    rolling_stats["Episode"] = rolling_stats.index
+    return rolling_stats
+
 
 def make_frame_curried(this_data, n_bodies=4):
     def make_frame(t):
