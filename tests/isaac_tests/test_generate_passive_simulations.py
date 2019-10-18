@@ -248,11 +248,11 @@ class TestCreatePassiveDatasetsForTraining(unittest.TestCase):
         # Create initial datasets with default key_prefix
         gps.create_passive_datasets_for_training(**self.args)
 
-        # Create new datasets with different key_prefix a trial numbers
+        # Create new datasets with a different key_prefix and number of trials
         # If the previous dataset isn't deleted: either there will be more trials (added to the
         # same path) or an incorrect number of trials.
         args_copy = self.args.copy()
-        args_copy["trial_hdf_key_prefix"] = "new_trials_"
+        args_copy["trial_hdf_key_prefix"] = "newtrials_"
         args_copy["n_simulations_train"] = 1
         args_copy["n_simulations_val"] = 1
         args_copy["n_simulations_test"] = 1
