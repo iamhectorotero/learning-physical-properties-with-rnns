@@ -47,3 +47,6 @@ class TestZTest(unittest.TestCase):
 
         z = z_test(correct_answers, first_model_answers, second_model_answers)
         self.assertGreater(z, -1.645)
+
+if __name__ == "__main__":
+    unittest.main()
