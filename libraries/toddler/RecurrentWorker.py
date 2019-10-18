@@ -13,9 +13,10 @@ from copy import deepcopy
 from torch.autograd import Variable
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 from simulator.environment import physic_env
+from .constants import TQDM_DISABLE
 from .action_coding import get_mouse_action, mass_answers_idx, force_answers_idx
 from .action_coding import CLICK, NO_OP,  MAX_X, MIN_X, MAX_Y, MIN_Y, ANSWER_QUESTION
 from .action_selection import e_greedy_action
@@ -115,7 +116,7 @@ def train(value_network, optimizer, discount_factor, train_cond, n_bodies, train
     experience_replay = []
 
     num_episodes = len(train_cond)
-    pbar = tqdm(initial=starting_episode, total=starting_episode + num_episodes)
+    pbar = tqdm(initial=starting_episode, total=starting_episode + num_episodes, disable=TQDM_DISABLE)
     question_loss = 0
     value_loss = 0
     accuracy = 0
