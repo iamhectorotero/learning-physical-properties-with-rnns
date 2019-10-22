@@ -217,3 +217,19 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
     return accuracy, predicted
 
 
+def get_best_model_and_its_accuracy(model_A, model_A_accuracy, model_B, model_B_accuracy):
+    """Compares two models and returns a copy of the better one and its accuracy. If the models are
+       equally accurate, the second model will be returned.
+    Args:
+        model_A: a model to be compared in terms of its accuracy.
+        model_A_accuracy: the first model's accuracy.
+        model_B: a model to be compared in terms of its accuracy.
+        model_B_accuracy: the second model's accuracy.
+    Returns:
+        best_model: a copy of the model with the best accuracy.
+        best_model_accuracy: the accuracy of the best model."""
+
+    if model_A_accuracy > model_B_accuracy:
+        return deepcopy(model_A), model_A_accuracy
+
+    return deepcopy(model_B), model_B_accuracy

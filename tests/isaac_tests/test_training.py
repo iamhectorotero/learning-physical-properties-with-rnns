@@ -833,5 +833,68 @@ class TestTrainingLoop(unittest.TestCase):
         constants.TQDM_DISABLE = True
         reload(training)
 
+
+class TestGetBestModelAndItsAccuracy(unittest.TestCase):
+    def test_model_A_is_better(self):
+        model_A = "first_model"
+        model_A_accuracy = 1.
+        model_B = "second_model"
+        model_B_accuracy = 0.5
+
+        best_model, best_model_accuracy = training.get_best_model_and_its_accuracy(model_A,
+                                                                                   model_A_accuracy,
+                                                                                   model_B,
+                                                                                   model_B_accuracy)
+
+        self.assertEqual(best_model, model_A)
+        self.assertEqual(best_model_accuracy, model_A_accuracy)
+
+    def test_model_B_is_better(self):
+        model_A = "first_model"
+        model_A_accuracy = 0.25
+        model_B = "second_model"
+        model_B_accuracy = 0.6
+
+        best_model, best_model_accuracy = training.get_best_model_and_its_accuracy(model_A,
+                                                                                   model_A_accuracy,
+                                                                                   model_B,
+                                                                                   model_B_accuracy)
+
+        self.assertEqual(best_model, model_B)
+        self.assertEqual(best_model_accuracy, model_B_accuracy)
+
+    def test_models_are_equally_accurate(self):
+        model_A = "first_model"
+        model_A_accuracy = 0.4
+        model_B = "second_model"
+        model_B_accuracy = 0.4
+
+        best_model, best_model_accuracy = training.get_best_model_and_its_accuracy(model_A,
+                                                                                   model_A_accuracy,
+                                                                                   model_B,
+                                                                                   model_B_accuracy)
+
+        self.assertEqual(best_model, model_B)
+        self.assertEqual(best_model_accuracy, model_B_accuracy)
+
+    def test_model_returned_is_a_copy(self):
+        class FakeModel:
+            def __init__(self, attr):
+                self.attribute = attr
+
+        model_A = FakeModel("a")
+        model_A_accuracy = 0.5
+        model_B = FakeModel("b")
+        model_B_accuracy = 0.55
+
+        best_model, best_model_accuracy = training.get_best_model_and_its_accuracy(model_A,
+                                                                                   model_A_accuracy,
+                                                                                   model_B,
+                                                                                   model_B_accuracy)
+
+        self.assertEqual(best_model.attribute, model_B.attribute)
+        self.assertEqual(best_model_accuracy, model_B_accuracy)
+        self.assertFalse(best_model is model_B)
+
 if __name__ == "__main__":
     unittest.main()
