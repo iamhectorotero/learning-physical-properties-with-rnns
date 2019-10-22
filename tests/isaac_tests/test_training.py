@@ -392,10 +392,14 @@ class TestTrainingLoop(unittest.TestCase):
         sys.stderr = sys.__stderr__
 
     @staticmethod
-    def create_loader(n_features, n_classes, n_examples=10, seq_length=100):
+    def create_loader(n_features, n_classes, n_examples=10, seq_length=100, multibranch=False):
 
         X = np.random.rand(n_examples, seq_length, n_features).astype('f')
-        Y = np.random.randint(low=0, high=n_classes, size=n_examples)
+
+        if multibranch:
+            Y = np.random.randint(low=0, high=n_classes, size=(n_examples, 2))
+        else:
+            Y = np.random.randint(low=0, high=n_classes, size=n_examples)
 
         X = torch.from_numpy(X)
         Y = torch.from_numpy(Y)
@@ -411,6 +415,13 @@ class TestTrainingLoop(unittest.TestCase):
         n_layers = 1
         network_params = (n_features, hidden_dim, n_layers, n_classes)
         model, _, _ = initialise_model(network_params)
+        return model
+
+    @staticmethod
+    def create_multibranch_model(n_features, n_classes):
+        hidden_dim = 5
+        network_params = (n_features, hidden_dim, n_classes)
+        model, _, _ = initialise_model(network_params, arch=MultiBranchModel)
         return model
 
     @staticmethod
@@ -689,6 +700,64 @@ class TestTrainingLoop(unittest.TestCase):
 
         best_model_accuracy = training.evaluate(best_model, val_loader)
         self.assertEqual(max(accuracies[1]), best_model_accuracy)
+
+    def test_model_with_best_val_accuracy_is_returned_for_multibranch_model(self):
+        n_features = 4
+        n_classes = 3
+        model = self.create_multibranch_model(n_features, n_classes)
+
+        optimizer = Adam(model.parameters())
+        error = CrossEntropyLoss()
+
+        train_loader = self.create_loader(n_features, n_classes, multibranch=True)
+        val_loader = self.create_loader(n_features, n_classes, multibranch=True)
+        num_epochs = 10
+        print_stats_per_epoch = False
+
+        seq_start, seq_end, seq_step = None, None, None
+        patience = np.inf
+
+        losses, accuracies, best_model = training.training_loop(model, optimizer, error,
+                                                                train_loader, val_loader,
+                                                                num_epochs, print_stats_per_epoch,
+                                                                seq_start, seq_end, seq_step,
+                                                                patience, multibranch=True)
+
+        best_first_accuracy = training.evaluate(best_model[0], val_loader)
+        self.assertEqual(max(np.array(accuracies[1])[:, 0]), best_first_accuracy[0])
+        best_second_accuracy = training.evaluate(best_model[1], val_loader)
+        self.assertEqual(max(np.array(accuracies[1])[:, 1]), best_second_accuracy[1])
+
+    def test_returned_statistics_shape_is_correct_for_multibranch_model(self):
+        n_features = 4
+        n_classes = 3
+        model = self.create_multibranch_model(n_features, n_classes)
+
+        optimizer = Adam(model.parameters())
+        error = CrossEntropyLoss()
+
+        train_loader = self.create_loader(n_features, n_classes, multibranch=True)
+        val_loader = self.create_loader(n_features, n_classes, multibranch=True)
+        num_epochs = 10
+        print_stats_per_epoch = False
+
+        seq_start, seq_end, seq_step = None, None, None
+        patience = np.inf
+
+        losses, accuracies, best_model = training.training_loop(model, optimizer, error,
+                                                                train_loader, val_loader,
+                                                                num_epochs, print_stats_per_epoch,
+                                                                seq_start, seq_end, seq_step,
+                                                                patience, multibranch=True)
+
+        self.assertEqual(losses.shape[1], 2)
+        self.assertEqual(len(losses[:, 0]), num_epochs)
+        self.assertEqual(len(losses[:, 1]), num_epochs)
+
+        self.assertEqual(len(accuracies[0][:, 0]), num_epochs)
+        self.assertEqual(len(accuracies[0][:, 1]), num_epochs)
+        self.assertEqual(len(accuracies[1][:, 0]), num_epochs)
+        self.assertEqual(len(accuracies[1][:, 1]), num_epochs)
 
     @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
     def test_print_stats_per_epoch_is_true(self, mock_stderr):
