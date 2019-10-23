@@ -10,7 +10,7 @@ mpl.use('TkAgg')
 
 from matplotlib.axes import Axes
 
-from isaac import training, visualization
+from isaac import evaluation, visualization
 from isaac.dataset import prepare_dataset
 
 from isaac.models import ComplexRNNModel, initialise_model
@@ -89,7 +89,7 @@ class TestPlotConfusionMatrixGivenPredictedAndTestLoader(unittest.TestCase):
                                          training_columns=self.training_columns)
 
         self.write_dataframes_to_file(dataset, self.dataset_path)
-        _, predicted = training.evaluate_saved_model(self.model_path, self.network_params,
+        _, predicted = evaluation.evaluate_saved_model(self.model_path, self.network_params,
                                                      self.dataset_path, self.training_columns,
                                                      self.class_columns, trials=None)
 
@@ -107,7 +107,7 @@ class TestPlotConfusionMatrixGivenPredictedAndTestLoader(unittest.TestCase):
                                          training_columns=self.training_columns)
 
         self.write_dataframes_to_file(dataset, self.dataset_path)
-        _, predicted = training.evaluate_saved_model(self.model_path, self.network_params,
+        _, predicted = evaluation.evaluate_saved_model(self.model_path, self.network_params,
                                                      self.dataset_path, self.training_columns,
                                                      self.class_columns, trials=None)
 
