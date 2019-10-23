@@ -8,7 +8,9 @@ install:
     - source "$HOME/miniconda/etc/profile.d/conda.sh"
     - hash -r 
     - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
+    - conda config --set allow_conda_downgrades true
+    - conda install conda=4.6.14
+
     - conda env create -f conda_environment.yml
     - conda activate diss
     - pip install ./libraries
