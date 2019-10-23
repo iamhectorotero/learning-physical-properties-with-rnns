@@ -28,4 +28,4 @@ dependencies:
     - imageio=2.4.1
     - requests
     - jupyter_contrib_nbextensions
-    - coverage=4.5.4
+    - coverage
