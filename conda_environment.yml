@@ -12,6 +12,7 @@ dependencies:
     - pytorch=1.0.1
     - torchvision
     - cudatoolkit=9.0
+    - hdf5
     - pip
     - pip:
         - notebook==5.6.0
