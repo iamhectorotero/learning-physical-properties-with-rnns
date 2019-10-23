@@ -1,6 +1,4 @@
-language: python
-python:
-    - "3.5"
+language: minimal
 install:
     - sudo apt-get install -y libhdf5-serial-dev
     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;

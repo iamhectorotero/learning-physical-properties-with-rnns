@@ -6,6 +6,7 @@ channels:
     - conda-forge
     - pytorch
 dependencies:
+    - python=3.5
     - pandas
     - rpy2
     - pytorch=1.0.1
