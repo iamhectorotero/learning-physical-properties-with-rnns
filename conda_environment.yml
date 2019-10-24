@@ -33,3 +33,4 @@ dependencies:
     - requests
     - jupyter_contrib_nbextensions
     - coverage
+    - tqdm=4.32.1
