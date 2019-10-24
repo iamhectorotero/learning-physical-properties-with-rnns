@@ -13,6 +13,8 @@ dependencies:
     - torchvision
     - cudatoolkit=9.0
     - h5py
+    - python-blosc
+    - python-lzo
     - pip
     - pip:
         - cython
