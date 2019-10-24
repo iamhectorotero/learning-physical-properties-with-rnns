@@ -5,6 +5,7 @@ python:
 addons:
   apt_packages:
     - libhdf5-serial-dev
+    - libhdf5-dev
 
 install:
     - export HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/
