@@ -694,6 +694,10 @@ class TestPrepareDataset(unittest.TestCase):
                                     categorical_columns=categorical_columns)
 
     def test_gpu_device(self):
+        if not torch.cuda.is_available():
+            warnings.warn("No Cuda device available to run this test.")
+            return
+
         n_trials = 10
         n_training_cols = 6
         n_class_cols = 3
@@ -706,11 +710,8 @@ class TestPrepareDataset(unittest.TestCase):
                                                    training_columns=training_cols,
                                                    device=gpu_device)
 
-        if torch.cuda.is_available():
-            self.assertTrue(dataset_loader.dataset.tensors[0].is_cuda)
-            self.assertTrue(dataset_loader.dataset.tensors[1].is_cuda)
-        else:
-            warnings.warn("No Cuda device available to run this test.")
+        self.assertTrue(dataset_loader.dataset.tensors[0].is_cuda)
+        self.assertTrue(dataset_loader.dataset.tensors[1].is_cuda)
 
     def test_cpu_device(self):
         n_trials = 10
