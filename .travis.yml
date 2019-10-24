@@ -2,13 +2,8 @@ language: python
 python:
     - "3.5"
 
-addons:
-  apt_packages:
-    - libhdf5-dev
-
 install:
-    - dpkg -L libhdf5-dev
-    # - sudo apt-get install -y libhdf5-dev
+    - sudo apt-get build-dep python-tables
     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     - bash miniconda.sh -b -p $HOME/miniconda
     - source "$HOME/miniconda/etc/profile.d/conda.sh"
