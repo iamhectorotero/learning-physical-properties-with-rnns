@@ -14,7 +14,7 @@ install:
     - pip install ./libraries
 
 script:
-    - for filename in $(ls tests/isaac_tests/*.py); do; coverage run -a --source=libraries/isaac $filename; done
+    - for filename in $(ls tests/isaac_tests/*.py); do coverage run -a --source=libraries/isaac $filename; done
     - coverage report -m
 
 sudo: required
