@@ -19,6 +19,9 @@ from isaac.models import initialise_model, MultiBranchModel
 
 
 class TestTrainingLoop(unittest.TestCase):
+    def setUp(self):
+        sys.stderr = sys.__stderr__
+
     def tearDown(self):
         sys.stderr = sys.__stderr__
 
@@ -393,6 +396,8 @@ class TestTrainingLoop(unittest.TestCase):
     @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
     def test_print_stats_per_epoch_is_true(self, mock_stderr):
         # To test if a method prints stats in TQDM re-enable TQDM printing
+        print(mock_stderr.getvalue().count("Train_loss"))
+
         constants.TQDM_DISABLE = False
         reload(training)
 
@@ -417,6 +422,7 @@ class TestTrainingLoop(unittest.TestCase):
                                                                 num_epochs, print_stats_per_epoch,
                                                                 seq_start, seq_end, seq_step,
                                                                 patience)
+        print(mock_stderr.getvalue().count("Train_loss"))
 
         # Stats are printed once more at the end of the loop
         self.assertEqual(mock_stderr.getvalue().count("Train_loss"), num_epochs + 1)
