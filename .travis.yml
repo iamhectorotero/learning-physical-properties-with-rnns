@@ -4,9 +4,10 @@ python:
 
 addons:
   apt_packages:
-    - libhdf5-serial-dev
+    - libhdf5-dev
 
 install:
+    - dpkg -L libhdf5-dev
     # - sudo apt-get install -y libhdf5-dev
     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     - bash miniconda.sh -b -p $HOME/miniconda
@@ -19,7 +20,8 @@ install:
     - pip install ./libraries
 
 script:
-    - for filename in $(ls tests/isaac_tests/*.py); do coverage run -a --source=libraries/isaac $filename; done
+    - cd tests/isaac_tests
+    - for filename in $(ls *.py); do coverage run -a --source=libraries/isaac $filename; done
     - coverage report -m
 
 sudo: required
