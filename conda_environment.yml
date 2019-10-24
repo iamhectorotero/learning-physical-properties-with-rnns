@@ -15,6 +15,7 @@ dependencies:
     - h5py
     - pip
     - pip:
+        - cython
         - notebook==5.6.0
         - tzlocal
         - scikit-learn
