@@ -1,5 +1,5 @@
 # Learning physical properties with RNNs
-![](https://travis-ci.com/iamhectorotero/diss.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master)
+![](https://travis-ci.com/iamhectorotero/learning-physical-properties-with-rnns.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master)
 ![](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/master/graphs/badge.svg?token=krWcTqni7k)
 
 
@@ -39,7 +39,7 @@ Three different conditions are evaluated:
 # Libraries
 
 - `simulator`: includes the code necessary to generate the physical environment and generate passive trials or run active simulations.  Its main configuration can be checked in `environment.py`.
-- `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`. ![](https://travis-ci.com/iamhectorotero/diss.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master) ![](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/master/graphs/badge.svg?token=krWcTqni7k)
+- `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`. ![](https://travis-ci.com/iamhectorotero/learning-physical-properties-with-rnns.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master) ![](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/master/graphs/badge.svg?token=krWcTqni7k)
 - `toddler`: library to train and test Reinforcement Learning agents. Includes code for training RDQN (Recurrent Deep Recurrent Q-learning) agents.
 
 
