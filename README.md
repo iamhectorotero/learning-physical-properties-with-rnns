@@ -75,7 +75,7 @@ conda env create -f conda_environment.yml
 conda activate learning-physical-properties-with-rnns
 pip install ./libraries
 ```
-These commands will first create an environment named "diss", then activate it and install in it the
+These commands will first create an environment named "learning-physical-properties-with-rnns", then activate it and install in it the
 libraries in the repository ("isaac", "simulator" and "toddler"). Once this is done, the environment
 should be ready to run the notebooks. In case you want to install the libraries in developer mode
 substitute the last line by `pip install -e ./libraries`
