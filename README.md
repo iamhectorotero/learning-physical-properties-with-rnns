@@ -1,4 +1,4 @@
-# diss
+# Learning physical properties with RNNs
 ![](https://travis-ci.com/iamhectorotero/diss.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master)
 
 
@@ -71,7 +71,7 @@ Conda environment with them installed (see [HERE](https://docs.conda.io/projects
 for a tutorial on how to install Conda). Once Conda is available, run:
 ```
 conda env create -f conda_environment.yml
-conda activate diss
+conda activate learning-physical-properties-with-rnns
 pip install ./libraries
 ```
 These commands will first create an environment named "diss", then activate it and install in it the
@@ -82,7 +82,7 @@ substitute the last line by `pip install -e ./libraries`
 To remove the environment and all its installed libraries execute:
 ```
 conda deactivate
-conda remove -y --name diss --all
+conda remove -y --name learning-physical-properties-with-rnns --all
 ```
 
 # References
