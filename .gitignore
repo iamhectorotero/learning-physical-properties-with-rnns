@@ -109,3 +109,9 @@ venv.bak/
 diss_results/*_plots/*
 diss_results/models/*
 diss_results/scalers/*
+
+cogsci_experiments/data/*.rdata
+cogsci_experiments/data/*.h5
+cogsci_experiments/models/*.pt
+cogsci_experiments/scalers/*.sk
+cogsci_experiments/for_hector_small*
