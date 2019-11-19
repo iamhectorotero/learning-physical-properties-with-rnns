@@ -30,6 +30,7 @@ class TestAddNoiseToDataloader(unittest.TestCase):
         dl_with_noise = isaac.noise.add_noise_to_dataloader(dl)
 
         # check dimensions
+        self.assertEqual(dl.batch_size, dl_with_noise.batch_size)
         self.assertEqual(dl.dataset.tensors[0].shape, dl_with_noise.dataset.tensors[0].shape)
         self.assertEqual(dl.dataset.tensors[1].shape, dl_with_noise.dataset.tensors[1].shape)
 
@@ -44,10 +45,6 @@ class TestAddNoiseToDataloader(unittest.TestCase):
         dl = self.create_loader(10, 2, 25000)
 
         dl_with_noise = isaac.noise.add_noise_to_dataloader(dl, noise_deviation=10.)
-
-        # check dimensions
-        self.assertEqual(dl.dataset.tensors[0].shape, dl_with_noise.dataset.tensors[0].shape)
-        self.assertEqual(dl.dataset.tensors[1].shape, dl_with_noise.dataset.tensors[1].shape)
 
         # check Ys are the same
         self.assertTrue(torch.all(torch.eq(dl.dataset.tensors[1], dl_with_noise.dataset.tensors[1])))
@@ -67,7 +64,6 @@ class TestAddNoiseToDataloader(unittest.TestCase):
         dl_with_noise2 = isaac.noise.add_noise_to_dataloader(dl, noise_deviation=10., seed=72)
 
         self.assertTrue(torch.allclose(dl_with_noise.dataset.tensors[0], dl_with_noise2.dataset.tensors[0]))
-
 
     def test_variability_by_setting_different_seeds(self):
         dl = self.create_loader(10, 2, 25000)
