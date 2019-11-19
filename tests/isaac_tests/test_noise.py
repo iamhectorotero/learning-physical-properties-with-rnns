@@ -53,6 +53,13 @@ class TestAddNoiseToDataloader(unittest.TestCase):
         self.assertTrue(torch.all(torch.eq(dl.dataset.tensors[1], dl_with_noise.dataset.tensors[1])))
         self.assertNotAlmostEqual(float(dl.dataset.tensors[0].mean()), float(dl_with_noise.dataset.tensors[0].mean()))
 
+    def test_zero_noise(self):
+
+        dl = self.create_loader(10, 2, 100)
+        dl_with_noise = isaac.noise.add_noise_to_dataloader(dl, noise_deviation=0)
+
+        self.assertTrue(torch.allclose(dl.dataset.tensors[0], dl_with_noise.dataset.tensors[0]))
+
     def test_reproducibility(self):
 
         dl = self.create_loader(10, 2, 25000)
