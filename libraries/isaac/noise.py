@@ -16,6 +16,9 @@ def add_noise_to_dataloader(dataloader, noise_deviation=0.1, seed=0):
     X, Y = dataloader.dataset.tensors
 
     noise = Normal(0, noise_deviation).sample(X.shape)
+    if X.is_cuda:
+        noise = noise.cuda()
+
     X_with_noise = X + noise
 
     tensor_dataset = torch.utils.data.TensorDataset(X_with_noise, Y)
