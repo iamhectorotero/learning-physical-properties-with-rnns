@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import ttest_ind
 
 def z_test(correct_answers, answers_first_model, answers_second_model):
     """Compares two models given their answers to a dataset and the true answers.
@@ -27,3 +28,34 @@ def z_test(correct_answers, answers_first_model, answers_second_model):
     Z = (p1 - p2) / np.sqrt(2*p*(1-p) / n)
 
     return Z
+
+
+def is_best_model_significantly_better(accuracies):
+    """Compares two accuracy lists and checks whether the model with the largest accuracy is
+    significantly better than the rest.
+
+    Args:
+        model_accuracies: A list of models' accuracies to compare. Every row must also include a
+        label, e.g.: [("GRU", [0.25, 0.5, 0.4]), ("RNN", [0.33, 0.4, 0.25])]"""
+
+    best_mean_accuracy = 0.
+    best_label = ""
+    best_accuracy_list = []
+
+    for label, accuracy_list in accuracies:
+        if np.mean(accuracy_list) > best_mean_accuracy:
+            best_mean_accuracy = np.mean(accuracy_list)
+            best_accuracy_list = accuracy_list
+            best_label = label
+    significantly_best = True
+
+    for label, accuracy_list in accuracies:
+        if label != best_label:
+            statistic, pvalue = ttest_ind(best_accuracy_list, accuracy_list)
+
+            if statistic < 0 or pvalue > 0.05:
+                print(best_label+" not significantly better than "+label, pvalue)
+                significantly_best = False
+
+    if significantly_best:
+        print(best_label + " is significantly better than the rest")
