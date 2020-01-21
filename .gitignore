@@ -112,6 +112,8 @@ diss_results/scalers/*
 
 cogsci_experiments/data/*.rdata
 cogsci_experiments/data/*.h5
-cogsci_experiments/models/*.pt
+cogsci_experiments/models/*
 cogsci_experiments/scalers/*.sk
 cogsci_experiments/for_hector_small*
+cogsci_experiments/*/*.pdf
+cogsci_experiments/*/*stats.h5
