@@ -15,7 +15,8 @@ from .constants import BASIC_TRAINING_COLS
 def plot_confusion_matrix(y_true, y_pred, classes,
                           normalize=False,
                           title=None,
-                          cmap=plt.cm.Blues):
+                          cmap=plt.cm.Blues,
+                          ax=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -39,12 +40,14 @@ def plot_confusion_matrix(y_true, y_pred, classes,
 
     # print(cm)
 
-    fig, ax = plt.subplots()
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(4, 4))
+
     vmin, vmax = None, None
     if normalize:
         vmin = 0
         vmax = 100
-        
+
     im = ax.imshow(cm, interpolation='nearest', cmap=cmap, vmin=vmin, vmax=vmax)
     # ax.figure.colorbar(im, ax=ax)
 
@@ -68,8 +71,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
         for j in range(cm.shape[1]):
             ax.text(j, i, fmt.format(cm[i, j]),
                     ha="center", va="center",
-                    color="white" if cm[i, j] > thresh else "black")
-    fig.tight_layout()
+                    color="white" if cm[i, j] > thresh else "black", fontsize=20)
     return ax
 
 def plot_timeseries(timeseries, labels, xlabel=None, ylabel=None):
