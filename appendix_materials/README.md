@@ -1,6 +1,6 @@
 # Appendix Materials
 
-![Performance table](cogsci_images/architecture_performance_table.png)
+![Performance table](../cogsci_experiments/cogsci_images/architecture_performance_table.png)
 
 ## The percentage of participants and RNN selecting an answer is correlated
 ![Force Answer selection](cogsci_images/rel_percentages_correlation.jpg)
