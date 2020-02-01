@@ -71,7 +71,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
         for j in range(cm.shape[1]):
             ax.text(j, i, fmt.format(cm[i, j]),
                     ha="center", va="center",
-                    color="white" if cm[i, j] > thresh else "black", fontsize=20)
+                    color="white" if cm[i, j] > thresh else "black", fontsize=25, fontweight='bold')
     return ax
 
 def plot_timeseries(timeseries, labels, xlabel=None, ylabel=None):
