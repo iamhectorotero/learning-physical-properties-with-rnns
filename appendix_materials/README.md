@@ -1,4 +1,5 @@
 # Appendix Materials
+Includes verbatim paragraphs from [Otero & Bramley, 2020]
 
 ![Performance table](../cogsci_experiments/cogsci_images/architecture_performance_table.png)
 
@@ -58,3 +59,7 @@ By taking the Predictive Divergence as ground truth for the evidence (recalling 
 
 ## A comparison between RNN Mass Interval Information and Predictive Divergence Mass for every trial
 ![Mass RNN vs IO uncertainty](../cogsci_experiments/cogsci_images/all_PD_IER_mass_plots.jpg)
+
+
+# References
+Otero Mediero, H. & Bramley, N. R. (2020). Contrasting RNN-based and simulation-based models of human physical parameter inference. Unpublished manuscript.
