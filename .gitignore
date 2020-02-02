@@ -104,7 +104,7 @@ venv.bak/
 .mypy_cache/
 
 # .mp4
-*.mp4
+# *.mp4
 *.h5
 diss_results/*_plots/*
 diss_results/models/*
