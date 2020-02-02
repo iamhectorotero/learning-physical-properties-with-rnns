@@ -56,5 +56,5 @@ By taking the Predictive Divergence as ground truth for the evidence (recalling 
 ## A comparison between RNN Force Interval Information and Predictive Divergence Force for every trial
 ![Force RNN vs IO uncertainty](../cogsci_experiments/cogsci_images/all_PD_IER_force_plots.jpg)
 
-## A comparison between RNN Force Interval Information and Predictive Divergence Force for every trial
+## A comparison between RNN Mass Interval Information and Predictive Divergence Mass for every trial
 ![Mass RNN vs IO uncertainty](../cogsci_experiments/cogsci_images/all_PD_IER_mass_plots.jpg)
