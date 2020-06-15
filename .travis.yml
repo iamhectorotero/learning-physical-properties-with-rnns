@@ -23,6 +23,3 @@ after_success:
 
 sudo: required
 
-branches:
-    only:
-        - simplify-conda-yaml
