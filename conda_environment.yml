@@ -12,9 +12,7 @@ dependencies:
     - pytorch=1.0.1
     - torchvision
     - cudatoolkit=9.0
-    - h5py
-    - python-blosc
-    - python-lzo
+    - hd5
     - pip
     - pip:
         - cython
