@@ -25,4 +25,4 @@ sudo: required
 
 branches:
     only:
-        - master
+        - simplify-conda-yaml
