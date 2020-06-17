@@ -1,6 +1,6 @@
 # Learning physical properties with RNNs
-![](https://travis-ci.com/iamhectorotero/learning-physical-properties-with-rnns.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master)
-![](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/master/graphs/badge.svg?token=krWcTqni7k)
+![](https://travis-ci.org/iamhectorotero/learning-physical-properties-with-rnns.svg?branch=cogsci-2020-experiments)
+[![codecov](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/cogsci-2020-experiments/graph/badge.svg)](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns)
 
 
 Human beings possess an innate understanding of physics. We can, for example, predict that an object will fall just by **observing** how it's standing on a table or learn a ball's weight by passing it from hand to hand. 'When' these abilities are acquired and 'how' our brain performs are a matter of discussion among scientists. [Bramley et al., 2018] developed an environment to better assess our abilities at guessing these hidden properties. Using the environment shown below, participants were tasked with guessing the mass of the labelled pucks and the attraction or repulsion forces acting between them.  
@@ -29,7 +29,8 @@ Two types of questions are asked:
 # Libraries
 
 - `simulator`: includes the code necessary to generate the physical environment and generate passive trials or run active simulations.  Its main configuration can be checked in `environment.py`.
-- `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`. ![](https://travis-ci.com/iamhectorotero/learning-physical-properties-with-rnns.svg?token=vGXQzmA3wxTt9C2pBBg4&branch=master) ![](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/master/graphs/badge.svg?token=krWcTqni7k)
+- `isaac`: all the tools necessary to generate datasets with passive simulations, postprocess them and train Recurrent Neural Networks to predict the environment's latent physical properties (mass or force). Also includes code to evaluate the resulting models and visualize trials. **Unit tests** for the code in this library are incldued in `tests/isaac_tests`. ![](https://travis-ci.org/iamhectorotero/learning-physical-properties-with-rnns.svg?branch=cogsci-2020-experiments)
+[![codecov](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns/branch/cogsci-2020-experiments/graph/badge.svg)](https://codecov.io/gh/iamhectorotero/learning-physical-properties-with-rnns)
 
 # Notebooks
 ### cogsci_experiments
