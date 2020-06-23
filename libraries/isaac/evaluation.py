@@ -6,11 +6,14 @@ from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
 
 
-def predict(model, val_loader, seq_start, seq_end, step_size):
+def predict(model, val_loader, seq_start, seq_end, step_size, predict_seq2seq=False):
     for i, (x_val, y_val) in enumerate(val_loader):
 
         x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
-        y_hat = model(x_val)
+        if not predict_seq2seq:
+            y_hat = model(x_val)
+        else:
+            y_hat = model.predict_seq2seq_in_intervals(x_val)
 
         # If y_hat is a tuple, the model is multibranch so the branch predictions will be stacked.
         if isinstance(y_hat, tuple):
@@ -132,7 +135,8 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
                                        seq_end=None, step_size=None, scaler_path=None,
                                        trials=None, arch=ComplexRNNModel, multiclass=False,
                                        categorical_columns=(), normalisation_cols=(),
-                                       device=torch.device("cpu"), return_test_loader=False):
+                                       device=torch.device("cpu"), return_test_loader=False,
+                                       predict_seq2seq=False):
     """Loads a trained model and gets their predictions for a given dataset.
     Args:
         model_paths: (list) Group of models sharing the same characteristics.
@@ -154,6 +158,7 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
         normalisation_cols: argument to read_dataset. Indicates which columns must be normalised.
         device: (torch.device) both model and dataset will be loaded to this device.
         return_test_loader: (boolean) if True, returns the test loader used to evaluate the model.
+        predict_seq2seq: (boolean) if True, for each of the trials the prediction will be a sequence.
 
     Returns:
         accuracy: the model's accuracy.
@@ -186,7 +191,7 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
         model.eval()
 
         predictions = predict(model, test_loader, seq_start=seq_start, step_size=step_size,
-                              seq_end=seq_end)
+                              seq_end=seq_end, predict_seq2seq=predict_seq2seq)
 
         predictions_list.append(predictions.detach())
 
