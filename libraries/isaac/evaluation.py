@@ -6,6 +6,24 @@ from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
 
 
+def predict(model, val_loader, seq_start, seq_end, step_size):
+    for i, (x_val, y_val) in enumerate(val_loader):
+
+        x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
+        y_hat = model(x_val)
+
+        # If y_hat is a tuple, the model is multibranch so the branch predictions will be stacked.
+        if isinstance(y_hat, tuple):
+            y_hat = torch.stack(y_hat, dim=2)
+
+        if i == 0:
+            all_predictions = y_hat
+        else:
+            all_predictions = torch.cat([all_predictions, y_hat], dim=0)
+
+    return all_predictions
+
+
 def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=None, step_size=None):
     """Evaluates a model given a validation set.
     Args:
@@ -20,34 +38,16 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
         predicted: (list) if return_predicted is True, the model class predictions will be returned.
     """
 
-    total = 0
+    raw_predictions = predict(model, val_loader, seq_start, seq_end, step_size)
+    answers = torch.max(raw_predictions, dim=1)[1]
+    solutions = torch.cat([y_val for _, y_val in val_loader])
+    total = len(solutions)
+    correct = (answers == solutions).sum(dim=0)
 
-    for i, (x_val, y_val) in enumerate(val_loader):
-
-        x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
-        y_hat = model(x_val)
-
-        # If y_hat is a tuple, the model is multibranch so the branch predictions will be stacked.
-        if isinstance(y_hat, tuple):
-            y_hat = torch.stack(y_hat, dim=2)
-
-        current_predictions = torch.max(y_hat.data, dim=1)[1]
-        correct = (current_predictions == y_val).sum(dim=0)
-
-        if i == 0:
-            all_predictions = current_predictions
-            all_correct = correct
-        else:
-            all_predictions = torch.cat([all_predictions, current_predictions], dim=0)
-            all_correct += correct
-
-        total += y_val.size(0)
-
-
-    accuracy = 100 * all_correct.cpu().numpy() / float(total)
+    accuracy = 100 * correct.cpu().numpy() / float(total)
 
     if return_predicted:
-        return accuracy, all_predictions
+        return accuracy, answers
 
     return accuracy
 
