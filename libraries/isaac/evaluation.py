@@ -127,6 +127,75 @@ def evaluate_saved_model(model_paths, network_dims, test_dataset_path, training_
     return accuracy_list, predictions_list
 
 
+def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset_path,
+                                       training_columns, class_columns, seq_start=None,
+                                       seq_end=None, step_size=None, scaler_path=None,
+                                       trials=None, arch=ComplexRNNModel, multiclass=False,
+                                       categorical_columns=(), normalisation_cols=(),
+                                       device=torch.device("cpu"), return_test_loader=False):
+    """Loads a trained model and gets their predictions for a given dataset.
+    Args:
+        model_paths: (list) Group of models sharing the same characteristics.
+        network_dims: network parameters that will be passed to the network architecture.
+        test_dataset_path: path to the dataset the model will be evaluated on.
+        training_columns: columns in the dataset that will be used as features.
+        class_columns: columns in the dataset that will be interpreted as the class.
+        seq_start, seq_end, step_size: (integers) where the sequence starts and ends and the step
+                                       to be applied to it.
+        scaler_path: path to the saved scaler used to normalise the data. If None, the data won't
+                     be normalised.
+        trials: Alternatively to passing the test_dataset_path, the model can be evaluated on a set
+                of already loaded trials. If both test_dataset_path and trials are not None, trials
+                will be used.
+        arch: model architecture.
+        multiclass: argument to read_dataset. If True, indicates a multibranch network is used and
+                    thus class_columns is a list of size (number_of_branches, number_of_columns_per_class)
+        categorical_columns: argument to read_dataset. Indicates which columns mustn't be normalised.
+        normalisation_cols: argument to read_dataset. Indicates which columns must be normalised.
+        device: (torch.device) both model and dataset will be loaded to this device.
+        return_test_loader: (boolean) if True, returns the test loader used to evaluate the model.
+
+    Returns:
+        accuracy: the model's accuracy.
+        predicted: the model's prediction for the test dataset loaded."""
+
+    class_columns = list(class_columns)
+    training_columns = list(training_columns)
+
+    if scaler_path:
+        scaler = joblib.load(scaler_path)
+        normalise_data=True
+    else:
+        scaler = None
+        normalise_data=False
+
+    if trials is None:
+        trials = read_dataset(test_dataset_path)
+
+    test_loader, _ = prepare_dataset([trials], class_columns, normalise_data=normalise_data,
+                                     scaler=scaler, training_columns=training_columns, multiclass=multiclass,
+                                     categorical_columns=categorical_columns, normalisation_cols=normalisation_cols,
+                                     device=device)
+
+    predictions_list = []
+
+    for model_path in model_paths:
+        model = arch(*network_dims)
+        model.load_state_dict(torch.load(model_path, map_location="cpu"))
+        model = model.to(device=device)
+        model.eval()
+
+        predictions = predict(model, test_loader, seq_start=seq_start, step_size=step_size,
+                              seq_end=seq_end)
+
+        predictions_list.append(predictions.detach())
+
+    if return_test_loader:
+        return predictions_list, test_loader
+
+    return predictions_list
+
+
 def get_best_model_and_its_accuracy(model_A, model_A_accuracy, model_B, model_B_accuracy):
     """Compares two models and returns a copy of the better one and its accuracy. If the models are
        equally accurate, the second model will be returned.
