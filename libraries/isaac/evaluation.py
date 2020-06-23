@@ -52,12 +52,12 @@ def evaluate(model, val_loader, return_predicted=False, seq_start=None, seq_end=
     return accuracy
 
 
-def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None,
+def evaluate_saved_model(model_paths, network_dims, test_dataset_path, training_columns, class_columns, seq_start=None,
                          seq_end=None, step_size=None, scaler_path=None, trials=None, arch=ComplexRNNModel, multiclass=False,
                          categorical_columns=(), normalisation_cols=(), device=torch.device("cpu"), return_test_loader=False):
     """Loads a trained model and evaluates it in a given dataset.
     Args:
-        model_path: path to the saved model.
+        model_paths: path to the saved model or group of models sharing the same characteristics.
         network_dims: network parameters that will be passed to the network architecture.
         test_dataset_path: path to the dataset the model will be evaluated on.
         training_columns: columns in the dataset that will be used as features.
@@ -81,6 +81,9 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
         accuracy: the model's accuracy.
         predicted: the model's prediction for the test dataset loaded."""
 
+    if type(model_paths) == str:
+        model_paths = [model_paths]
+
     class_columns = list(class_columns)
     training_columns = list(training_columns)
 
@@ -91,11 +94,6 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
         scaler = None
         normalise_data=False
 
-    model = arch(*network_dims)
-    model.load_state_dict(torch.load(model_path, map_location="cpu"))
-    model = model.to(device=device)
-    model.eval()
-
     if trials is None:
         trials = read_dataset(test_dataset_path)
 
@@ -104,13 +102,29 @@ def evaluate_saved_model(model_path, network_dims, test_dataset_path, training_c
                                      categorical_columns=categorical_columns, normalisation_cols=normalisation_cols,
                                      device=device)
 
-    accuracy, predicted = evaluate(model, test_loader, return_predicted=True, seq_start=seq_start, step_size=step_size, seq_end=seq_end)
-    print("Model's accuracy on test set:", accuracy)
+    accuracy_list = []
+    predictions_list = []
+
+    for model_path in model_paths:
+        model = arch(*network_dims)
+        model.load_state_dict(torch.load(model_path, map_location="cpu"))
+        model = model.to(device=device)
+        model.eval()
+
+        accuracy, predicted = evaluate(model, test_loader, return_predicted=True, seq_start=seq_start, step_size=step_size, seq_end=seq_end)
+
+        accuracy_list.append(accuracy)
+        predictions_list.append(predicted)
+        # print("Model's accuracy on test set:", accuracy)
+
+    if len(accuracy_list) == 1:
+        accuracy_list = accuracy_list[0]
+        predictions_list = predictions_list[0]
 
     if return_test_loader:
-        return accuracy, predicted, test_loader
+        return accuracy_list, predictions_list, test_loader
 
-    return accuracy, predicted
+    return accuracy_list, predictions_list
 
 
 def get_best_model_and_its_accuracy(model_A, model_A_accuracy, model_B, model_B_accuracy):
