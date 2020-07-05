@@ -16,7 +16,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
                           normalize=False,
                           title=None,
                           cmap=plt.cm.Blues,
-                          ax=None):
+                          ax=None, vmin=None, vmax=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -32,7 +32,7 @@ def plot_confusion_matrix(y_true, y_pred, classes,
     # Only use the labels that appear in the data
     # classes = classes[unique_labels(y_true, y_pred)]
     if normalize:
-        cm = 100*cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         # print("Normalized confusion matrix")
     else:
         pass
@@ -42,11 +42,6 @@ def plot_confusion_matrix(y_true, y_pred, classes,
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(4, 4))
-
-    vmin, vmax = None, None
-    if normalize:
-        vmin = 0
-        vmax = 100
 
     im = ax.imshow(cm, interpolation='nearest', cmap=cmap, vmin=vmin, vmax=vmax)
     # ax.figure.colorbar(im, ax=ax)
@@ -65,8 +60,9 @@ def plot_confusion_matrix(y_true, y_pred, classes,
              rotation_mode="anchor")
 
     # Loop over data dimensions and create text annotations.
-    fmt = '{0:.0f}%' if normalize else '{}'
-    thresh = cm.max() / 2.
+    fmt = '{0:.2f}' if normalize else '{}'
+    thresh = np.mean(cm)
+        
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
             ax.text(j, i, fmt.format(cm[i, j]),
