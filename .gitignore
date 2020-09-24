@@ -116,4 +116,6 @@ cogsci_experiments/models/*
 cogsci_experiments/scalers/*.sk
 cogsci_experiments/for_hector_small*
 cogsci_experiments/*/*.pdf
+cogsci_experiments/*/*.jpg
+cogsci_experiments/*/*.mp4
 cogsci_experiments/*/*stats.h5
