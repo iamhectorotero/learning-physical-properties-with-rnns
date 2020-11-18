@@ -96,7 +96,8 @@ def smooth_out_rl_stats(dataframe, columns_to_smooth, window_size=500):
     return rolling_stats
 
 
-def make_frame_curried(this_data, n_bodies=4):
+def make_frame_curried(this_data, n_bodies=4, probability_image=None,
+                       entropy_image=None):
     def make_frame(t):
         labels = ['A', 'B', '', '']
         centers = np.array(['o1','o2','o3','o4'][:n_bodies])
@@ -105,16 +106,16 @@ def make_frame_curried(this_data, n_bodies=4):
         RAD = 25
         W = 600
         H = 400
-        # H_outer = 500
+        H_outer = 600
         N_OBJ = 4
 
         frame = int(math.floor(t*60))
-        # Essentially pauses the action if there are no more frames and but more clip duration
-        # if frame >= len(this_data["co"]):
-        #    frame = len(this_data["co"])-1
 
         # White background
-        surface = gz.Surface(W,H, bg_color=(1,1,1))
+        h = H
+        if probability_image is not None:
+            h = H_outer
+        surface = gz.Surface(W, h, bg_color=(1,1,1))
 
         # Walls
         wt = gz.rectangle(lx=W, ly=20, xy=(W/2,10), fill=(0,0,0))#, angle=Pi/8
@@ -126,6 +127,16 @@ def make_frame_curried(this_data, n_bodies=4):
         wl.draw(surface)
         wr.draw(surface)
 
+        # Add timeline and time marker
+        if probability_image is not None:
+            timeline = gz.rectangle(2*W,(H_outer-H), fill=gz.ImagePattern(probability_image), xy=(0, H))
+            timeline.draw(surface)
+            timeline = gz.rectangle(2*W,(H_outer-H), fill=gz.ImagePattern(entropy_image), xy=(0, H + (H_outer-H)//2))
+            timeline.draw(surface)
+
+            time_posit = 27 + int(float(frame)/len(this_data["frame"]) * (W*0.95))
+            time_marker = gz.rectangle(2, (H_outer-H), fill=(0,0,0), xy=(time_posit, H+(H_outer-H)/2))
+            time_marker.draw(surface)
         # Pucks
         for label, color, center in zip(labels, colors, centers):
 
