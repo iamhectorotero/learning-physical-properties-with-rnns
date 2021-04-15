@@ -6,14 +6,20 @@ from .models import ComplexRNNModel
 from .dataset import read_dataset, prepare_dataset
 
 
-def predict(model, val_loader, seq_start, seq_end, step_size, predict_seq2seq=False):
+def predict(model, val_loader, seq_start, seq_end, step_size, predict_seq2seq=False,
+            predict_rolling_windows=False, seconds_per_window=None):
+
+    assert not (predict_seq2seq and predict_rolling_windows)
+
     for i, (x_val, y_val) in enumerate(val_loader):
 
         x_val = Variable(x_val[:, seq_start:seq_end:step_size, :])
-        if not predict_seq2seq:
-            y_hat = model(x_val)
-        else:
+        if predict_seq2seq:
             y_hat = model.predict_seq2seq_in_intervals(x_val)
+        elif predict_rolling_windows:
+            y_hat = model.predict_seq2seq_in_rolling_windows(x_val, seconds_per_window)
+        else:
+            y_hat = model(x_val)
 
         # If y_hat is a tuple, the model is multibranch so the branch predictions will be stacked.
         if isinstance(y_hat, tuple):
@@ -136,7 +142,8 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
                                        trials=None, arch=ComplexRNNModel, multiclass=False,
                                        categorical_columns=(), normalisation_cols=(),
                                        device=torch.device("cpu"), return_test_loader=False,
-                                       predict_seq2seq=False):
+                                       predict_seq2seq=False, predict_rolling_windows=False,
+                                       seconds_per_window=None):
     """Loads a trained model and gets their predictions for a given dataset.
     Args:
         model_paths: (list) Group of models sharing the same characteristics.
@@ -159,10 +166,16 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
         device: (torch.device) both model and dataset will be loaded to this device.
         return_test_loader: (boolean) if True, returns the test loader used to evaluate the model.
         predict_seq2seq: (boolean) if True, for each of the trials the prediction will be a sequence.
+        predict_rolling_windows: (boolean) if True, for each of the trials the prediction will be 
+                                 done in rolling windows of size <seconds_per_window>
+        seconds_per_window: (int) the number of seconds in each rolling window. Only used if
+                           predict_rolling_windows is True.
 
     Returns:
         accuracy: the model's accuracy.
         predicted: the model's prediction for the test dataset loaded."""
+
+    assert not (predict_seq2seq and predict_rolling_windows)
 
     class_columns = list(class_columns)
     training_columns = list(training_columns)
@@ -191,7 +204,9 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
         model.eval()
 
         predictions = predict(model, test_loader, seq_start=seq_start, step_size=step_size,
-                              seq_end=seq_end, predict_seq2seq=predict_seq2seq)
+                              seq_end=seq_end, predict_seq2seq=predict_seq2seq,
+                              predict_rolling_windows=predict_rolling_windows,
+                              seconds_per_window=seconds_per_window)
 
         predictions_list.append(predictions.detach())
 

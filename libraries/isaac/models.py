@@ -67,6 +67,34 @@ class MultiBranchModel(nn.Module):
 
         return output_seq1, output_seq2
 
+    def predict_seq2seq_in_rolling_windows(self, x, seconds_per_window):
+
+        output_seq1 = None
+        output_seq2 = None
+
+        # frames_per_interval = INTERVAL_SIZE * FPS // STEP_SIZE
+        frames_per_second = 1 * 60 // 3
+        window_size = frames_per_second*seconds_per_window
+
+        for i in range(0, x.shape[1]-window_size, frames_per_second):
+
+            out, _ = self.base_gru(x[:, i:i+window_size, :])
+
+            out_1, _ = self.gru1(out)
+            out_1 = self.fc1(out_1)[:, -1:, :]
+
+            out_2, _ = self.gru2(out)
+            out_2 = self.fc2(out_2)[:, -1:, :]
+
+            if output_seq1 is None:
+                output_seq1 = out_1
+                output_seq2 = out_2
+            else:
+                output_seq1 = torch.cat([output_seq1, out_1], dim=1)
+                output_seq2 = torch.cat([output_seq2, out_2], dim=1)
+
+        return output_seq1, output_seq2
+
 
 def initialise_model(network_params, lr=0.01, seed=0, arch=ComplexRNNModel, cell_type=nn.GRU,
                      device=torch.device("cpu")):
