@@ -19,7 +19,7 @@ dependencies:
         - notebook==5.6.0
         - tzlocal
         - scikit-learn
-        - tables
+        - tables==3.5.2
         - gizeh==0.1.11
         - pygame
     - pybox2d
