@@ -17,6 +17,7 @@ dependencies:
     - pip:
         - cython
         - notebook==5.6.0
+        - jupyter-client==5.3.1
         - tzlocal
         - scikit-learn
         - tables==3.5.2
