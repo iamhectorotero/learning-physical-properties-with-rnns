@@ -29,6 +29,5 @@ dependencies:
     - moviepy
     - imageio=2.4.1
     - requests
-    - jupyter_contrib_nbextensions
     - coverage
     - tqdm=4.32.1
