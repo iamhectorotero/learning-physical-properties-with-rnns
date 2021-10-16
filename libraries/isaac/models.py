@@ -14,6 +14,25 @@ class ComplexRNNModel(nn.Module):
         out = self.fc(out[:, -1, :]) 
         return out
 
+    def predict_seq2seq_in_rolling_windows(self, x, seconds_per_window):
+
+        output_seq = None
+
+        # frames_per_interval = INTERVAL_SIZE * FPS // STEP_SIZE
+        frames_per_second = 1 * 60 // 3
+        window_size = frames_per_second*seconds_per_window
+
+        for i in range(0, x.shape[1]-window_size, frames_per_second):
+
+            out, _ = self.rec_layer(x[:, i:i+window_size, :])
+            out = self.fc(out)[:, -1:, :]
+
+            if output_seq is None:
+                output_seq = out
+            else:
+                output_seq = torch.cat([output_seq, out], dim=1)
+        return output_seq
+
 
 class MultiBranchModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, dropout=0.5, cell_type=nn.GRU):
