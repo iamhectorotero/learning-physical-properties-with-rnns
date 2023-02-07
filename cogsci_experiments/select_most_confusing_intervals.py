@@ -37,7 +37,7 @@ d = {"rtheta": RTHETA_COLS, "xy_vxvy": BASIC_TRAINING_COLS,
      "xy_rtheta": XY_RTHETA_COLS, "xy_vxvy_rtheta": XY_VXVY_RTHETA_COLS}
 training_columns = d[model_name]
 
-dataset_path = "../new_exp_data/exp7_passive.h5"
+dataset_path = "data/test_passive_trials.h5"
 multiclass = True
 DATASET = read_dataset(dataset_path)
 
@@ -184,7 +184,7 @@ CSV_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_interv
 
 def write_confused_intervals(confused_df, question_type, solution):
 
-    replays = read_dataset("../new_exp_data/exp7_passive.h5")
+    replays = read_dataset("data/test_passive_trials.h5")
     print(len(replays))
     written_replays = {}
     number_of_written_replays = 0
