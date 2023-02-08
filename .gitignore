@@ -119,5 +119,6 @@ cogsci_experiments/*/*.pdf
 cogsci_experiments/*/*.jpg
 cogsci_experiments/*/*.png
 cogsci_experiments/*/*.mp4
-cogsci_experiments/*/*/*/.mp4
+cogsci_experiments/cogsci_images/confusing_videos/*
+cogsci_experiments/cogsci_images/obvious_videos/*
 cogsci_experiments/*/*stats.h5
