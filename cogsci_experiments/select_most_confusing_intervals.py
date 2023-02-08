@@ -1,5 +1,3 @@
-import isaac.constants
-
 from torch import nn
 from torch.nn import Softmax
 from isaac.utils import get_cuda_device_if_available
@@ -7,7 +5,7 @@ import joblib
 
 from isaac.dataset import read_dataset, prepare_dataset
 from isaac.models import MultiBranchModel, ComplexRNNModel
-from isaac.constants import BASIC_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS, RTHETA_COLS, XY_RTHETA_COLS, XY_VXVY_RTHETA_COLS
+from isaac.constants import BASIC_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS, RTHETA_COLS, XY_RTHETA_COLS, XY_VXVY_RTHETA_COLS, QUESTION_TYPES
 from isaac.evaluation import predict_with_a_group_of_saved_models, evaluate_saved_model
 
 import torch
@@ -16,6 +14,12 @@ from torch.autograd import Variable
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+
+from isaac.visualization import make_frame_curried
+import moviepy.editor as mpy
+from scipy import misc
+import os
+import json
 
 SECONDS_PER_WINDOW = 5 # seconds
 FPS = 60
@@ -36,9 +40,19 @@ d = {"rtheta": RTHETA_COLS, "xy_vxvy": BASIC_TRAINING_COLS,
      "xy_rtheta": XY_RTHETA_COLS, "xy_vxvy_rtheta": XY_VXVY_RTHETA_COLS}
 training_columns = d[model_name]
 
+N_TRIALS = 2
+
 dataset_path = "data/test_passive_trials.h5"
 multiclass = True
-DATASET = read_dataset(dataset_path, n_trials=250)
+
+DATASET = read_dataset(dataset_path, n_trials=N_TRIALS)
+CONFUSING_DATA_PATH = "cogsci_images/confusing_videos/confusing_%s" % model_name
+os.makedirs(CONFUSING_DATA_PATH, exist_ok=True)
+FILENAME = "confusing_%s_interval_in_trial_%d_sec_%d_to_%d_rnn_thinks_%s__prob_%.4f_while_solution_is_%s_prob_%.4f"
+VIDEO_PATH = os.path.join(CONFUSING_DATA_PATH, FILENAME + ".mp4")
+JSON_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_physics_data.json")
+JSON_DATA = []
+CSV_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_interval_description.csv")
 
 
 def get_question_predictions_for_group_of_models(question_type):
@@ -52,7 +66,7 @@ def get_question_predictions_for_group_of_models(question_type):
 
     else:
         class_columns = [list(MASS_CLASS_COLS), list(FORCE_CLASS_COLS)]
-        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))
+        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))[:2]
         scaler_path = "scalers/passive_"+model_name+"_scaler.sk"
         model_arch = MultiBranchModel
         network_dims = (len(training_columns), HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
@@ -73,40 +87,6 @@ def get_question_predictions_for_group_of_models(question_type):
 
     return predictions
 
-print("MASS")
-question_type = "mass"
-group_mass_seq_prediction = get_question_predictions_for_group_of_models(question_type)
-
-print("\nFORCE")
-question_type = "force"
-group_force_seq_prediction = get_question_predictions_for_group_of_models(question_type)
-
-mass_solutions = [trial[list(MASS_CLASS_COLS)].idxmax(axis=1).unique()[0] for trial in DATASET]
-force_solutions = [trial[list(FORCE_CLASS_COLS)].idxmax(axis=1).unique()[0] for trial in DATASET]
-
-s = Softmax(dim=-1)
-group_force_seq_prediction = s(group_force_seq_prediction)
-group_mass_seq_prediction = s(group_mass_seq_prediction)
-
-avg_force_seq_prediction = torch.mean(group_force_seq_prediction, dim=0)
-avg_mass_seq_prediction = torch.mean(group_mass_seq_prediction, dim=0)
-
-n_trials = avg_force_seq_prediction.shape[0]
-n_windows = avg_force_seq_prediction.shape[1]
-window_second_start = [i for _ in range(n_trials) for i in range(1, n_windows+1)]
-trial_number = [i for i in range(n_trials) for _ in range(1, n_windows+1)]
-
-mass_df = pd.DataFrame(data=avg_mass_seq_prediction.reshape(n_trials*n_windows, 3).numpy(),
-                       columns=["rnn_%s" % cl for cl in MASS_CLASS_COLS])
-mass_df["window_second_start"] = window_second_start
-mass_df["trial_number"] = trial_number
-mass_df["solution"] = [mass_solutions[trial_id] for trial_id in trial_number]
-
-force_df = pd.DataFrame(data=avg_force_seq_prediction.reshape(n_trials*n_windows, 3).numpy(),
-                       columns=["rnn_%s" % cl for cl in FORCE_CLASS_COLS])
-force_df["window_second_start"] = window_second_start
-force_df["trial_number"] = trial_number
-force_df["solution"] = [force_solutions[trial_id] for trial_id in trial_number]
 
 def entropy_rnn_responses(responses):
     responses = responses.tolist()
@@ -144,17 +124,6 @@ def get_probabilities_df(df, task):
                                          "max_probability_for_a_wrong_option"])
     return df
 
-confused_mass_dfs = get_probabilities_df(mass_df, "mass")
-confused_force_dfs = get_probabilities_df(force_df, "force")
-
-confused_mass_dfs = confused_mass_dfs.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
-confused_force_dfs = confused_force_dfs.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
-
-from isaac.visualization import make_frame_curried
-import moviepy.editor as mpy
-from scipy import misc
-
-
 def make_clip(trial_data, window_second_start, solution, rnn_thinks_this_is, rnn_confidence):
 
     trial_data = trial_data.iloc[window_second_start*FPS:(window_second_start + SECONDS_PER_WINDOW)*FPS]
@@ -168,26 +137,10 @@ def make_clip(trial_data, window_second_start, solution, rnn_thinks_this_is, rnn
     clip = mpy.VideoClip(make_frame, duration=duration / 60)
     return clip, trial_data
 
-import os
-import json
+def write_confused_intervals(confused_df, question_type, solution, json_data, csv_data):
 
-CONFUSING_DATA_PATH = "cogsci_images/confusing_videos/confusing_%s" % model_name
-os.makedirs(CONFUSING_DATA_PATH, exist_ok=True)
-FILENAME = "confusing_%s_interval_in_trial_%d_sec_%d_to_%d_rnn_thinks_%s__prob_%.4f_while_solution_is_%s_prob_%.4f"
-VIDEO_PATH = os.path.join(CONFUSING_DATA_PATH, FILENAME + ".mp4")
-JSON_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_physics_data.json")
-JSON_DATA = []
-CSV_DATA = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
-             "rnn_preferred_option_probability", "rnn_solution_probability"]]
-CSV_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_interval_description.csv")
-
-def write_confused_intervals(confused_df, question_type, solution):
-
-    replays = read_dataset("data/test_passive_trials.h5", n_trials=250)
-    print(len(replays))
     written_replays = {}
     number_of_written_replays = 0
-
 
     confused_df = confused_df.query("solution == '%s'" % solution).copy()
 
@@ -207,8 +160,8 @@ def write_confused_intervals(confused_df, question_type, solution):
         # DON'T SAVE AN INTERVAL IF IT REFRESHES
         window_frame_start = window_second_start * 60
         window_frame_end = window_second_end * 60
-        frames_in_which_the_replay_refreshes = replays[trial_number].refreshes[0] if\
-                                               "refreshes" in replays[trial_number].columns\
+        frames_in_which_the_replay_refreshes = DATASET[trial_number].refreshes[0] if\
+                                               "refreshes" in DATASET[trial_number].columns\
                                                 else []
         frames_in_which_the_replay_refreshes = [frames_in_which_the_replay_refreshes] if\
                                                     type(frames_in_which_the_replay_refreshes) == np.int64\
@@ -236,7 +189,7 @@ def write_confused_intervals(confused_df, question_type, solution):
 
         # SAVE THE INTERVAL
         written_replays[trial_number] = written_replays.get(trial_number, []) + [window_second_start]
-        clip, trial_data = make_clip(replays[trial_number], window_second_start, solution, rnn_preferred_option, rnn_preferred_option_probability)
+        clip, trial_data = make_clip(DATASET[trial_number], window_second_start, solution, rnn_preferred_option, rnn_preferred_option_probability)
         clip.ipython_display(fps=60)
         clip.write_videofile(VIDEO_PATH % (
             question_type, trial_number, window_second_start, window_second_end,
@@ -244,42 +197,54 @@ def write_confused_intervals(confused_df, question_type, solution):
 
         trial_data = trial_data.to_dict(orient='list')
         # Simplify attributes whose values are unique throughout the list
-        print(trial_data)
         # for key in ["trial_type", "condition_world_variant", "tM", "tR", "world_id"]:
         for key in ["same", "A", "B", "attract", "repel", "none"]:
             if key in trial_data:
                 trial_data[key] = trial_data[key][0]
-        JSON_DATA.append(trial_data)
-        CSV_DATA.append([trial_number, window_second_start, window_second_end, solution, rnn_preferred_option,
-                         rnn_preferred_option_probability, rnn_solution_probability])
+        json_data.append(trial_data)
+        csv_data.append([trial_number, window_second_start, window_second_end, solution,
+                         rnn_preferred_option, rnn_preferred_option_probability,
+                         rnn_solution_probability])
 
         number_of_written_replays += 1
         if number_of_written_replays == 5:
             break
 
-    print(number_of_written_replays)
 
-write_confused_intervals(confused_force_dfs, "force", "attract")
-write_confused_intervals(confused_force_dfs, "force", "repel")
-write_confused_intervals(confused_force_dfs, "force", "none")
+if __name__ == "__main__":
 
-with open(JSON_PATH % "force", "w+") as f: 
-    json.dump(JSON_DATA, f)
-    
-interval_descriptions = pd.DataFrame(data=CSV_DATA[1:], columns=CSV_DATA[0])
-interval_descriptions.to_csv(CSV_PATH % "force", index=False)
+    for question_type, question_answers in zip(QUESTION_TYPES, [MASS_CLASS_COLS, FORCE_CLASS_COLS]):
 
+        print(question_type)
+        group_seq_prediction = get_question_predictions_for_group_of_models(question_type)
 
-JSON_DATA = []
-CSV_DATA = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
-             "rnn_preferred_option_probability", "rnn_solution_probability"]]
+        solutions = [trial[list(question_answers)].idxmax(axis=1).unique()[0] for trial in DATASET]
 
-write_confused_intervals(confused_mass_dfs, "mass", "A")
-write_confused_intervals(confused_mass_dfs, "mass", "B")
-write_confused_intervals(confused_mass_dfs, "mass", "same")
+        s = Softmax(dim=-1)
+        group_seq_prediction = s(group_seq_prediction)
+        avg_seq_prediction = torch.mean(group_seq_prediction, dim=0)
 
-with open(JSON_PATH % "mass", "w+") as f:
-    json.dump(JSON_DATA, f)
+        n_windows = avg_seq_prediction.shape[1]
+        window_second_start = [i for _ in range(N_TRIALS) for i in range(1, n_windows+1)]
+        trial_number = [i for i in range(N_TRIALS) for _ in range(1, n_windows+1)]
 
-interval_descriptions = pd.DataFrame(data=CSV_DATA[1:], columns=CSV_DATA[0])
-interval_descriptions.to_csv(CSV_PATH % "mass",index=False)
+        question_df = pd.DataFrame(data=avg_seq_prediction.reshape(N_TRIALS*n_windows, 3).numpy(),
+                               columns=["rnn_%s" % cl for cl in question_answers])
+        question_df["window_second_start"] = window_second_start
+        question_df["trial_number"] = trial_number
+        question_df["solution"] = [solutions[trial_id] for trial_id in trial_number]
+
+        confused_dfs = get_probabilities_df(question_df, question_type)
+        confused_dfs = confused_dfs.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
+
+        json_data = []
+        csv_data = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
+                 "rnn_preferred_option_probability", "rnn_solution_probability"]]
+        for answer in question_answers:
+            write_confused_intervals(confused_dfs, question_type, answer, json_data, csv_data)
+
+        with open(JSON_PATH % question_type, "w+") as f:
+            json.dump(json_data, f)
+
+        interval_descriptions = pd.DataFrame(data=csv_data[1:], columns=csv_data[0])
+        interval_descriptions.to_csv(CSV_PATH % question_type, index=False)
