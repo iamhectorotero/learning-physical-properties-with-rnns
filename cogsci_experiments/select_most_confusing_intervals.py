@@ -7,6 +7,7 @@ from isaac.dataset import read_dataset, prepare_dataset
 from isaac.models import MultiBranchModel, ComplexRNNModel
 from isaac.constants import BASIC_TRAINING_COLS, MASS_CLASS_COLS, FORCE_CLASS_COLS, RTHETA_COLS, XY_RTHETA_COLS, XY_VXVY_RTHETA_COLS, QUESTION_TYPES
 from isaac.evaluation import predict_with_a_group_of_saved_models, evaluate_saved_model
+from simulator.environment import physic_env
 
 import torch
 import glob
@@ -137,6 +138,23 @@ def make_clip(trial_data, window_second_start, solution, rnn_thinks_this_is, rnn
     clip = mpy.VideoClip(make_frame, duration=duration / 60)
     return clip, trial_data
 
+
+def does_interval_refresh_according_to_speeds(trial_data, window_second_start):
+    trial_data = trial_data.iloc[window_second_start*FPS:(window_second_start + SECONDS_PER_WINDOW)*FPS]
+
+    for row_i in range(trial_data.shape[0]):
+        row = trial_data.iloc[row_i]
+
+        vel_list = []
+        for obj in ["o1", "o2", "o3", "o4"]:
+            vel_list.append({'x': row[obj+'.vx'], 'y': row[obj+'.vy']})
+
+        if physic_env.all_bodies_slow_than_criterion(vel_list):
+            return True
+
+    return False
+
+
 def write_confused_intervals(confused_df, question_type, solution, json_data, csv_data):
 
     written_replays = {}
@@ -172,8 +190,12 @@ def write_confused_intervals(confused_df, question_type, solution, json_data, cs
             if window_frame_end > frame > window_frame_start:
                 interval_refreshes = True
                 break
+
         if interval_refreshes:
-            print("Skipping trial %d and start %d because of interval refreshes" % (trial_number, window_second_start))
+            print("Skipping trial %d and start %d because of interval refreshes according to notation" % (trial_number, window_second_start))
+            continue
+        if does_interval_refresh_according_to_speeds(DATASET[trial_number], window_second_start):
+            print("Skipping trial %d and start %d because of interval refreshes according to speeds" % (trial_number, window_second_start))
             continue
 
         # DON'T SAVE AN INTERVAL IF THERE'S AN OVERLAPPING INTERVAL ALREADY SAVED

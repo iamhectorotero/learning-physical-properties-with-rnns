@@ -120,12 +120,14 @@ class physic_env():
 
         return loc_list, vel_list
 
-    def get_speed(self, vx, vy):
+    @staticmethod
+    def get_speed(vx, vy):
         return np.sqrt(vx**2 + vy**2)
 
-    def all_bodies_slow_than_criterion(self, vel_list):
+    @staticmethod
+    def all_bodies_slow_than_criterion(vel_list):
         for obj in vel_list:
-            if self.get_speed(obj['x'], obj['y']) > 0.25:
+            if physic_env.get_speed(obj['x'], obj['y']) > 0.25:
                 return False
         return True
 
