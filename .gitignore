@@ -119,4 +119,5 @@ cogsci_experiments/*/*.pdf
 cogsci_experiments/*/*.jpg
 cogsci_experiments/*/*.png
 cogsci_experiments/*/*.mp4
+cogsci_experiments/*/*/*/.mp4
 cogsci_experiments/*/*stats.h5
