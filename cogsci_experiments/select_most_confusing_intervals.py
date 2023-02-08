@@ -245,8 +245,11 @@ def write_confused_intervals(confused_df, question_type, solution):
 
         trial_data = trial_data.to_dict(orient='list')
         # Simplify attributes whose values are unique throughout the list
-        for key in ["trial_type", "condition_world_variant", "tM", "tR", "world_id"]:
-            trial_data[key] = trial_data[key][0]
+        print(trial_data)
+        # for key in ["trial_type", "condition_world_variant", "tM", "tR", "world_id"]:
+        for key in ["same", "A", "B", "attract", "repel", "none"]:
+            if key in trial_data:
+                trial_data[key] = trial_data[key][0]
         JSON_DATA.append(trial_data)
         CSV_DATA.append([trial_number, window_second_start, window_second_end, solution, rnn_preferred_option,
                          rnn_preferred_option_probability, rnn_solution_probability])
