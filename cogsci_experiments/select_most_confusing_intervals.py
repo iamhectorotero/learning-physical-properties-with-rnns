@@ -1,5 +1,4 @@
 import isaac.constants
-isaac.constants.TQDM_DISABLE = True
 
 from torch import nn
 from torch.nn import Softmax
