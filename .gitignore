@@ -106,14 +106,12 @@ venv.bak/
 # .mp4
 # *.mp4
 *.h5
-diss_results/*_plots/*
-diss_results/models/*
-diss_results/scalers/*
+diss_results*
 
-cogsci_experiments/data/*.rdata
-cogsci_experiments/data/*.h5
+new_exp_data
+cogsci_experiments/data/*
 cogsci_experiments/models/*
-cogsci_experiments/scalers/*.sk
+cogsci_experiments/scalers/*
 cogsci_experiments/for_hector_small*
 cogsci_experiments/*/*.pdf
 cogsci_experiments/*/*.jpg
@@ -122,3 +120,5 @@ cogsci_experiments/*/*.mp4
 cogsci_experiments/cogsci_images/confusing_videos/*
 cogsci_experiments/cogsci_images/obvious_videos/*
 cogsci_experiments/*/*stats.h5
+
+*.zip
