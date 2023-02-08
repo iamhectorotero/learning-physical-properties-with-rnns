@@ -41,7 +41,7 @@ d = {"rtheta": RTHETA_COLS, "xy_vxvy": BASIC_TRAINING_COLS,
      "xy_rtheta": XY_RTHETA_COLS, "xy_vxvy_rtheta": XY_VXVY_RTHETA_COLS}
 training_columns = d[model_name]
 
-N_TRIALS = 2
+N_TRIALS = 250
 
 dataset_path = "data/test_passive_trials.h5"
 multiclass = True
@@ -67,7 +67,7 @@ def get_question_predictions_for_group_of_models(question_type):
 
     else:
         class_columns = [list(MASS_CLASS_COLS), list(FORCE_CLASS_COLS)]
-        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))[:2]
+        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))
         scaler_path = "scalers/passive_"+model_name+"_scaler.sk"
         model_arch = MultiBranchModel
         network_dims = (len(training_columns), HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
