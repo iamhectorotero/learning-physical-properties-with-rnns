@@ -161,6 +161,7 @@ def write_confused_intervals(confused_df, question_type, solution, json_data, cs
     number_of_written_replays = 0
 
     confused_df = confused_df.query("solution == '%s'" % solution).copy()
+    confused_df = confused_df.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
 
     for row_i in range(confused_df.shape[0]):
 
@@ -257,7 +258,6 @@ if __name__ == "__main__":
         question_df["solution"] = [solutions[trial_id] for trial_id in trial_number]
 
         confused_dfs = get_probabilities_df(question_df, question_type)
-        confused_dfs = confused_dfs.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
 
         json_data = []
         csv_data = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
