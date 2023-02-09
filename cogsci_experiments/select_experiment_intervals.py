@@ -41,20 +41,26 @@ d = {"rtheta": RTHETA_COLS, "xy_vxvy": BASIC_TRAINING_COLS,
      "xy_rtheta": XY_RTHETA_COLS, "xy_vxvy_rtheta": XY_VXVY_RTHETA_COLS}
 training_columns = d[model_name]
 
-N_TRIALS = 250
+N_TRIALS = 2
 
 dataset_path = "data/test_passive_trials.h5"
 multiclass = True
 
 DATASET = read_dataset(dataset_path, n_trials=N_TRIALS)
+
 CONFUSING_DATA_PATH = "cogsci_images/confusing_videos/confusing_%s" % model_name
 os.makedirs(CONFUSING_DATA_PATH, exist_ok=True)
-FILENAME = "confusing_%s_interval_in_trial_%d_sec_%d_to_%d_rnn_thinks_%s__prob_%.4f_while_solution_is_%s_prob_%.4f"
-VIDEO_PATH = os.path.join(CONFUSING_DATA_PATH, FILENAME + ".mp4")
-JSON_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_physics_data.json")
-JSON_DATA = []
-CSV_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_interval_description.csv")
+CONFUSING_VIDEO_FILENAME = "confusing_%s_interval_in_trial_%d_sec_%d_to_%d_rnn_thinks_%s__prob_%.4f_while_solution_is_%s_prob_%.4f"
+CONFUSING_VIDEO_PATH = os.path.join(CONFUSING_DATA_PATH, CONFUSING_VIDEO_FILENAME + ".mp4")
+CONFUSING_JSON_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_physics_data.json")
+CONFUSING_CSV_PATH = os.path.join(CONFUSING_DATA_PATH, "confusing_"+model_name+"_%s_interval_description.csv")
 
+OBVIOUS_DATA_PATH = "cogsci_images/obvious_videos/obvious_%s" % model_name
+os.makedirs(OBVIOUS_DATA_PATH, exist_ok=True)
+OBVIOUS_VIDEO_FILENAME = "obvious_%s_interval_in_trial_%d_sec_%d_to_%d_rnn_thinks_%s__prob_%.4f"
+OBVIOUS_VIDEO_PATH = os.path.join(OBVIOUS_DATA_PATH, OBVIOUS_VIDEO_FILENAME + ".mp4")
+OBVIOUS_JSON_PATH = os.path.join(OBVIOUS_DATA_PATH, "obvious_"+model_name+"_%s_physics_data.json")
+OBVIOUS_CSV_PATH = os.path.join(OBVIOUS_DATA_PATH, "obvious_"+model_name+"_%s_interval_description.csv")
 
 def get_question_predictions_for_group_of_models(question_type):
 
@@ -67,7 +73,7 @@ def get_question_predictions_for_group_of_models(question_type):
 
     else:
         class_columns = [list(MASS_CLASS_COLS), list(FORCE_CLASS_COLS)]
-        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))
+        models = sorted(glob.glob("models/"+model_name+"/best_"+question_type+"_model_seed_*.pt"))[:2]
         scaler_path = "scalers/passive_"+model_name+"_scaler.sk"
         model_arch = MultiBranchModel
         network_dims = (len(training_columns), HIDDEN_DIM, OUTPUT_DIM, DROPOUT)
@@ -155,25 +161,32 @@ def does_interval_refresh_according_to_speeds(trial_data, window_second_start):
     return False
 
 
-def write_confused_intervals(confused_df, question_type, solution, json_data, csv_data):
+def write_intervals(probabilities_df, question_type, solution, json_data, csv_data, video_path, difficulty):
 
     written_replays = {}
     number_of_written_replays = 0
 
-    confused_df = confused_df.query("solution == '%s'" % solution).copy()
-    confused_df = confused_df.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
+    probabilities_df = probabilities_df.query("solution == '%s'" % solution).copy()
 
-    for row_i in range(confused_df.shape[0]):
+    if difficulty == "obvious":
+        probabilities_df = probabilities_df.query("solution == rnn_preferred_option")
+        probabilities_df = probabilities_df.sort_values(by="rnn_solution_probability", ascending=False)
+    elif difficulty == "confusing":
+        probabilities_df = probabilities_df.sort_values(by="max_probability_for_a_wrong_option", ascending=False)
+    else:
+        raise
+
+    for row_i in range(probabilities_df.shape[0]):
 
         window_second_start, trial_number, solution, rnn_preferred_option, rnn_preferred_option_probability, rnn_solution_probability = (
-            confused_df.iloc[row_i][["window_second_start", "trial_number", "solution", "rnn_preferred_option",
+            probabilities_df.iloc[row_i][["window_second_start", "trial_number", "solution", "rnn_preferred_option",
                                      "rnn_preferred_option_probability", "rnn_solution_probability"]])
 
         window_second_end = window_second_start + SECONDS_PER_WINDOW
 
-        print("RNN thinks the interval (%d, %d) in trial %d is %s with %.4f confidence. In reality, it is %s (%.4f)." % (
+        print("RNN thinks the interval (%d, %d) in trial %d is %s with %.4f confidence. Trial is %s." % (
             window_second_start, window_second_end, trial_number,
-            rnn_preferred_option, rnn_preferred_option_probability, solution, rnn_solution_probability))
+            rnn_preferred_option, rnn_preferred_option_probability, solution))
 
 
         # DON'T SAVE AN INTERVAL IF IT REFRESHES
@@ -214,9 +227,16 @@ def write_confused_intervals(confused_df, question_type, solution, json_data, cs
         written_replays[trial_number] = written_replays.get(trial_number, []) + [window_second_start]
         clip, trial_data = make_clip(DATASET[trial_number], window_second_start, solution, rnn_preferred_option, rnn_preferred_option_probability)
         clip.ipython_display(fps=60)
-        clip.write_videofile(VIDEO_PATH % (
-            question_type, trial_number, window_second_start, window_second_end,
-            rnn_preferred_option, rnn_preferred_option_probability, solution, rnn_solution_probability), fps=60)
+
+        if difficulty == "confusing":
+            clip.write_videofile(video_path % (
+                question_type, trial_number, window_second_start, window_second_end,
+                rnn_preferred_option, rnn_preferred_option_probability, solution, rnn_solution_probability), fps=60)
+        elif difficulty == "obvious":
+            clip.write_videofile(video_path % (
+                question_type, trial_number, window_second_start, window_second_end,
+                rnn_preferred_option, rnn_preferred_option_probability), fps=60)
+
 
         trial_data = trial_data.to_dict(orient='list')
         # Simplify attributes whose values are unique throughout the list
@@ -257,16 +277,20 @@ if __name__ == "__main__":
         question_df["trial_number"] = trial_number
         question_df["solution"] = [solutions[trial_id] for trial_id in trial_number]
 
-        confused_dfs = get_probabilities_df(question_df, question_type)
+        probabilities_df = get_probabilities_df(question_df, question_type)
 
-        json_data = []
-        csv_data = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
-                 "rnn_preferred_option_probability", "rnn_solution_probability"]]
-        for answer in question_answers:
-            write_confused_intervals(confused_dfs, question_type, answer, json_data, csv_data)
+        for difficulty, (json_path, csv_path, video_path) in zip(["obvious", "confusing"],
+                                                                 [(OBVIOUS_JSON_PATH, OBVIOUS_CSV_PATH, OBVIOUS_VIDEO_PATH),
+                                                                     (CONFUSING_JSON_PATH, CONFUSING_CSV_PATH, CONFUSING_VIDEO_PATH)]):
 
-        with open(JSON_PATH % question_type, "w+") as f:
-            json.dump(json_data, f)
+            json_data = []
+            csv_data = [["trial_number", "window_start", "window_end", "solution", "rnn_preferred_option",
+                     "rnn_preferred_option_probability", "rnn_solution_probability"]]
+            for answer in question_answers:
+                write_intervals(probabilities_df, question_type, answer, json_data, csv_data, video_path, difficulty)
 
-        interval_descriptions = pd.DataFrame(data=csv_data[1:], columns=csv_data[0])
-        interval_descriptions.to_csv(CSV_PATH % question_type, index=False)
+            with open(json_path % question_type, "w+") as f:
+                json.dump(json_data, f)
+
+            interval_descriptions = pd.DataFrame(data=csv_data[1:], columns=csv_data[0])
+            interval_descriptions.to_csv(csv_path % question_type, index=False)
