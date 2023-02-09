@@ -208,7 +208,7 @@ def predict_with_a_group_of_saved_models(model_paths, network_dims, test_dataset
                               predict_rolling_windows=predict_rolling_windows,
                               seconds_per_window=seconds_per_window)
 
-        predictions_list.append(predictions.detach())
+        predictions_list.append(predictions.detach().cpu())
 
     if return_test_loader:
         return predictions_list, test_loader
